@@ -6,7 +6,7 @@
 	Required :	Microsoft Visual C++ MFC
 				WTL Version 9.1
 	
-	Supported :	CWinApp/CFrameWnd/CView/CDocument and simple standard UI interface
+	Supported :	CWinApp/CFrameWnd/CView/CDocument and VC6 MFC simple standard UI interface
 
 	Tested :	VC6  MFC ATL (Visual Studio 2000) project create
 				VC12 MFC ATL (Visual Studio 2013) project upgrade and recompile
