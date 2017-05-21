@@ -8,15 +8,26 @@
 
 class CAnimateCtrlMTL : public CAnimateCtrlT<CWnd>
 {
-public:
-public:
-public:
+	public:
+		virtual ~CAnimateCtrlMTL() { DestroyWindow(); }
+
+	public:
+	public:
+		BOOL CAnimateCtrl::Create(DWORD dwStyle, const RECT& rect, CWnd* pParentWnd, UINT nID)
+		{
+			// initialize common controls
+			VERIFY(AfxDeferRegisterClass(AFX_WNDCOMMCTL_ANIMATE_REG));
+
+			CWnd* pWnd = this;
+			return pWnd->Create(ANIMATE_CLASS, NULL, dwStyle, rect, pParentWnd, nID);
+		}
+
 };
 
 class CButtonMTL : public CButtonT<CWnd>
 {
 	public:
-		virtual ~CButton() { DestroyWindow(); }
+		virtual ~CButtonMTL() { DestroyWindow(); }
 
 	public:
 	public:
@@ -30,7 +41,7 @@ class CButtonMTL : public CButtonT<CWnd>
 class CComboBoxMTL : public CComboBoxT<CWnd>
 {
 	public:
-		virtual ~CComboBox() { DestroyWindow(); }
+		virtual ~CComboBoxMTL() { DestroyWindow(); }
 
 	public:
 	public:
@@ -51,9 +62,32 @@ class CComboBoxMTL : public CComboBoxT<CWnd>
 
 class CComboBoxExMTL : public CComboBoxExT<CWnd>
 {
-public:
-public:
-public:
+	public:
+		virtual ~CComboBoxExMTL() { DestroyWindow(); }
+
+	public:
+	public:
+		BOOL Create(DWORD dwStyle, const RECT& rect, CWnd* pParentWnd, UINT nID)
+		{
+			// initialize common controls
+			VERIFY(AfxDeferRegisterClass(AFX_WNDCOMMCTL_USEREX_REG));
+
+			CWnd* pWnd = this;
+			return pWnd->Create(WC_COMBOBOXEX, NULL, dwStyle, rect, pParentWnd, nID);
+		}
+
+		CComboBoxMTL* GetComboBoxCtrl() const
+		{
+			ASSERT(::IsWindow(m_hWnd)); return (CComboBoxMTL*)CComboBox::FromHandle((HWND) ::SendMessage(m_hWnd, CBEM_GETCOMBOCONTROL, 0, 0));
+		}
+
+		CEditMTL* GetEditCtrl() const ;
+
+		CImageListMTL* SetImageList(CImageListMTL* pImageList)
+		{
+			ASSERT(::IsWindow(m_hWnd)); return CImageListMTL::FromHandle((HIMAGELIST) ::SendMessage(m_hWnd, CBEM_SETIMAGELIST, 0, (LPARAM)pImageList->GetSafeHandle()));
+		}
+
 };
 
 class CDateTimePickerCtrlMTL : public CDateTimePickerCtrlT<CWnd>
@@ -66,15 +100,17 @@ public:
 
 class CDragListBoxMTL : public CDragListBoxT<CWnd>
 {
-public:
-public:
-public:
+	public:
+		virtual ~CDragListBoxMTL() { DestroyWindow(); }
+
+	public:
+	public:
 };
 
 class CEditMTL : public CEditT<CWnd>
 {
 	public:
-		virtual ~CEdit() { DestroyWindow(); }
+		virtual ~CEditMTL() { DestroyWindow(); }
 
 	public:
 	public:
@@ -85,6 +121,11 @@ class CEditMTL : public CEditT<CWnd>
 		}
 };
 
+_INLINE CEditMTL* CComboBoxExMTL::GetEditCtrl() const
+{
+	ASSERT(::IsWindow(m_hWnd)); return (CEditMTL*)CEditMTL::FromHandle((HWND) ::SendMessage(m_hWnd, CBEM_GETEDITCONTROL, 0, 0));
+}
+
 class CFlatScrollBarMTL : public CFlatScrollBarT<CWnd>
 {
 public:
@@ -94,29 +135,80 @@ public:
 
 class CHeaderCtrlMTL : public CHeaderCtrlT<CWnd>
 {
-public:
-public:
-public:
+	public:
+		virtual ~CHeaderCtrlMTL() { DestroyWindow(); }
+
+	public:
+	public:
+		BOOL Create(DWORD dwStyle, const RECT& rect, CWnd* pParentWnd, UINT nID)
+		{
+			// initialize common controls
+			VERIFY(AfxDeferRegisterClass(AFX_WNDCOMMCTL_LISTVIEW_REG));
+
+			CWnd* pWnd = this;
+			return pWnd->Create(WC_HEADER, NULL, dwStyle, rect, pParentWnd, nID);
+		}
+
+		CImageListMTL* CreateDragImage(int nIndex)
+		{
+			ASSERT(::IsWindow(m_hWnd)); return CImageListMTL::FromHandle((HIMAGELIST) ::SendMessage(m_hWnd, HDM_CREATEDRAGIMAGE, nIndex, 0L));
+		}
+
+		CImageListMTL* GetImageList(int nImageList /* = HDSIL_NORMAL */) const
+		{
+			ASSERT(::IsWindow(m_hWnd)); return CImageListMTL::FromHandle((HIMAGELIST) ::SendMessage(m_hWnd, HDM_GETIMAGELIST, nImageList, 0L));
+		}
+
+		CImageListMTL* SetImageList(CImageListMTL* pImageList, int nImageList /* = HDSIL_NORMAL */)
+		{
+			ASSERT(::IsWindow(m_hWnd)); return CImageListMTL::FromHandle((HIMAGELIST) ::SendMessage(m_hWnd, HDM_SETIMAGELIST, nImageList, (LPARAM)pImageList->GetSafeHandle()));
+		}
+
 };
 
 class CHotKeyCtrlMTL : public CHotKeyCtrlT<CWnd>
 {
-public:
-public:
-public:
+	public:
+		virtual ~CHotKeyCtrlMTL() { DestroyWindow(); }
+	
+	public:
+	public:
+		BOOL Create(DWORD dwStyle, const RECT& rect, CWnd* pParentWnd, UINT nID)
+		{
+			// initialize common controls
+			VERIFY(AfxDeferRegisterClass(AFX_WNDCOMMCTL_HOTKEY_REG));
+
+			CWnd* pWnd = this;
+			return pWnd->Create(HOTKEY_CLASS, NULL, dwStyle, rect, pParentWnd, nID);
+		}
+
 };
 
 class CIPAddressCtrlMTL : public CIPAddressCtrlT<CWnd>
 {
-public:
-public:
-public:
+	public:
+		virtual ~CIPAddressCtrlMTL() { DestroyWindow(); }
+
+	public:
+	public:
+		BOOL Create(DWORD dwStyle, const RECT& rect, CWnd* pParentWnd, UINT nID)
+		{
+			// initialize common controls
+			VERIFY(AfxDeferRegisterClass(AFX_WNDCOMMCTL_INTERNET_REG));
+
+			// the IP Address Control must be a child
+			ASSERT(dwStyle & WS_CHILD);
+
+			CWnd* pWnd = this;
+			return pWnd->Create(WC_IPADDRESS, NULL, dwStyle, rect, pParentWnd, nID);
+		}
+
 };
 
 class CListBoxMTL : public CListBoxT<CWnd>
 {
 	public:
-		virtual ~CListBox() { DestroyWindow(); }
+		virtual ~CListBoxMTL() { DestroyWindow(); }
 
 	public:
 	public:
@@ -142,9 +234,30 @@ class CListBoxMTL : public CListBoxT<CWnd>
 #ifndef _MTL_ATL3
 class CLinkCtrlMTL : public CLinkCtrlT<CWnd>
 {
-public:
-public:
-public:
+	public:
+		virtual ~CLinkCtrlMTL() { DestroyWindow(); }
+
+	public:
+	public:
+		BOOL Create(DWORD dwStyle, const RECT& rect, CWnd* pParentWnd, UINT nID)
+		{
+			// initialize common controls
+			ENSURE(AfxDeferRegisterClass(AFX_WNDCOMMCTL_LINK_REG));
+
+#ifndef _UNICODE
+			ASSERT(0);
+			dwStyle;
+			rect;
+			pParentWnd;
+			nID;
+			// Can only be used in UNICODE builds
+			return FALSE;
+#else
+			CWnd* pWnd = this;
+			return pWnd->Create(WC_LINK, NULL, dwStyle, rect, pParentWnd, nID);
+#endif	// _UNICODE
+		}
+
 };
 #endif // _MTL_ATL3
 
@@ -156,6 +269,16 @@ class CListCtrlMTL : public CListViewCtrlT<CWnd>
 	
 	public:
 	public:
+		CEdit* EditLabel(int nItem)
+		{
+			ASSERT(::IsWindow(m_hWnd)); return (CEdit*)CWnd::FromHandle((HWND)::SendMessage(m_hWnd, LVM_EDITLABEL, nItem, 0L));
+		}
+
+		CEdit* GetEditControl() const
+		{
+			ASSERT(::IsWindow(m_hWnd)); return (CEdit*)CWnd::FromHandle((HWND)::SendMessage(m_hWnd, LVM_GETEDITCONTROL, 0, 0L));
+		}
+
 		DWORD GetExtendedStyle() const
 		{
 			ASSERT(::IsWindow(m_hWnd)); return (DWORD) ::SendMessage(m_hWnd, LVM_GETEXTENDEDLISTVIEWSTYLE, 0, 0);
@@ -179,7 +302,12 @@ class CListCtrlMTL : public CListViewCtrlT<CWnd>
 			if (hWnd == NULL)
 				return NULL;
 
-			return (CHeaderCtrl*)CHeaderCtrl::FromHandle(hWnd);
+			return (CHeaderCtrl*)FromHandle(hWnd);
+		}
+
+		CImageListMTL* GetImageList(int nImageList) const
+		{
+			ASSERT(::IsWindow(m_hWnd)); return CImageListMTL::FromHandle((HIMAGELIST) ::SendMessage(m_hWnd, LVM_GETIMAGELIST, nImageList, 0L));
 		}
 
 		CString GetItemText(int nItem, int nSubItem) const
@@ -207,6 +335,18 @@ class CListCtrlMTL : public CListViewCtrlT<CWnd>
 			ASSERT(::IsWindow(m_hWnd)); DWORD_PTR nOldPos = (DWORD_PTR)pos - 1; pos = (POSITION)(DWORD_PTR)(1 + GetNextItem((UINT)nOldPos, LVIS_SELECTED)); return (UINT)nOldPos;
 		}
 
+		CToolTipCtrlMTL* GetToolTips() const
+		{
+			ASSERT(::IsWindow(m_hWnd)); return (CToolTipCtrlMTL*)CWnd::FromHandle((HWND)::SendMessage(m_hWnd, LVM_GETTOOLTIPS, 0, 0L));
+		}
+
+		CImageListMTL* SetImageList(CImageListMTL* pImageList, int nImageList)
+		{
+			ASSERT(::IsWindow(m_hWnd)); return CImageListMTL::FromHandle((HIMAGELIST) ::SendMessage(m_hWnd, LVM_SETIMAGELIST, nImageList, (LPARAM)pImageList->GetSafeHandle()));
+		}
+
+		CToolTipCtrlMTL* SetToolTips(CToolTipCtrlMTL* pTip) ;
+			
 
 };
 
@@ -217,18 +357,49 @@ public:
 public:
 };
 
+class CPagerCtrlMTL : public CPagerCtrlT<CWnd>
+{
+	public:
+		virtual ~CPagerCtrlMTL() { DestroyWindow(); }
+
+	public:
+	public:
+		BOOL Create(DWORD dwStyle, const RECT& rect, CWnd* pParentWnd, UINT nID)
+		{
+			// initialize common controls
+			ENSURE(AfxDeferRegisterClass(AFX_WNDCOMMCTL_PAGER_REG));
+
+			CWnd* pWnd = this;
+			return pWnd->Create(WC_PAGESCROLLER, NULL, dwStyle, rect, pParentWnd, nID);
+		}
+
+};
+
 class CRichEditCtrlMTL : public CRichEditCtrlT<CWnd>
 {
-public:
-public:
-public:
+	public:
+		virtual ~CRichEditCtrlMTL() { DestroyWindow(); }
+
+	public:
+	public:
 };
 
 class CProgressCtrlMTL : public CProgressBarCtrlT<CWnd>
 {
-public:
-public:
-public:
+	public:
+		virtual ~CProgressCtrlMTL() { DestroyWindow(); }
+	
+	public:
+	public:
+		BOOL Create(DWORD dwStyle, const RECT& rect, CWnd* pParentWnd, UINT nID)
+		{
+			// initialize common controls
+			VERIFY(AfxDeferRegisterClass(AFX_WNDCOMMCTL_PROGRESS_REG));
+
+			CWnd* pWnd = this;
+			return pWnd->Create(PROGRESS_CLASS, NULL, dwStyle, rect, pParentWnd, nID);
+		}
+
 };
 
 class CProgressBarCtrlMTL : public CProgressBarCtrlT<CWnd>
@@ -238,12 +409,52 @@ public:
 public:
 };
 
+class CReBarCtrlMTL : public CReBarCtrlT<CWnd>
+{
+	public:
+		virtual ~CReBarCtrlMTL() { DestroyWindow(); }
+
+	public:
+	public:
+		BOOL Create(DWORD dwStyle, const RECT& rect, CWnd* pParentWnd, UINT nID)
+		{
+			// initialize common controls
+			VERIFY(AfxDeferRegisterClass(AFX_WNDCOMMCTL_COOL_REG));
+
+			CWnd* pWnd = this;
+			return pWnd->Create(REBARCLASSNAME, NULL, dwStyle, rect, pParentWnd, nID);
+		}
+
+		CPaletteMTL* GetPalette() const
+		{
+			ASSERT(::IsWindow(m_hWnd)); return CPaletteMTL::FromHandle((HPALETTE)::SendMessage(m_hWnd, RB_GETPALETTE, 0, 0L));
+		}
+
+		CToolTipCtrlMTL* GetToolTips() const
+		{
+			ASSERT(::IsWindow(m_hWnd)); return (CToolTipCtrlMTL*)CWnd::FromHandle((HWND)::SendMessage(m_hWnd, RB_GETTOOLTIPS, 0, 0L));
+		}
+
+		CWnd* SetOwner(CWnd* pWnd)
+		{
+			ASSERT(::IsWindow(m_hWnd)); CWnd::SetOwner(pWnd);  return CWnd::FromHandle((HWND)::SendMessage(m_hWnd, RB_SETPARENT, (WPARAM)pWnd->m_hWnd, 0L));
+		}
+
+		CPaletteMTL* SetPalette(HPALETTE hPal)
+		{
+			ASSERT(::IsWindow(m_hWnd)); return CPaletteMTL::FromHandle((HPALETTE)::SendMessage(m_hWnd, RB_SETPALETTE, 0, (LPARAM)hPal));
+		}
+
+		void SetToolTips(CToolTipCtrlMTL* pTip) ;
+
+};
+
 class CScrollBarMTL : public CScrollBarT<CWnd>
 {
 	DECLARE_DYNAMIC(CScrollBar)
 
 	public:
-		virtual ~CScrollBar() { DestroyWindow(); }
+		virtual ~CScrollBarMTL() { DestroyWindow(); }
 
 	public:
 	public:
@@ -256,15 +467,71 @@ class CScrollBarMTL : public CScrollBarT<CWnd>
 
 class CSliderCtrlMTL : public CTrackBarCtrlT<CWnd>
 {
-public:
-public:
-public:
+	public:
+		virtual ~CSliderCtrlMTL() { DestroyWindow(); }
+
+	public:
+	public:
+		BOOL Create(DWORD dwStyle, const RECT& rect, CWnd* pParentWnd, UINT nID)
+		{
+			// initialize common controls
+			VERIFY(AfxDeferRegisterClass(AFX_WNDCOMMCTL_BAR_REG));
+
+			CWnd* pWnd = this;
+			return pWnd->Create(TRACKBAR_CLASS, NULL, dwStyle, rect, pParentWnd, nID);
+		}
+
+		CWnd* GetBuddy(BOOL fLocation) const
+		{
+			ASSERT(::IsWindow(m_hWnd)); return CWnd::FromHandle((HWND) ::SendMessage(m_hWnd, TBM_GETBUDDY, fLocation, 0l));
+		}
+
+		CToolTipCtrlMTL* GetToolTips() const
+		{
+			ASSERT(::IsWindow(m_hWnd)); return (CToolTipCtrlMTL*)CWnd::FromHandle((HWND)::SendMessage(m_hWnd, TBM_GETTOOLTIPS, 0, 0L));
+		}
+
+		CWnd* SetBuddy(CWnd* pWndBuddy, BOOL fLocation)
+		{
+			ASSERT(::IsWindow(m_hWnd)); return CWnd::FromHandle((HWND) ::SendMessage(m_hWnd, TBM_SETBUDDY, fLocation, (LPARAM)pWndBuddy->GetSafeHwnd()));
+		}
+
+		void SetToolTips(CToolTipCtrlMTL* pTip) ;
+
+};
+
+class CSpinButtonCtrlMTL : public CUpDownCtrlT<CWnd>
+{
+	public:
+		virtual ~CSpinButtonCtrlMTL() { DestroyWindow(); }
+
+	public:
+	public:
+		BOOL Create(DWORD dwStyle, const RECT& rect, CWnd* pParentWnd, UINT nID)
+		{
+			// initialize common controls
+			VERIFY(AfxDeferRegisterClass(AFX_WNDCOMMCTL_UPDOWN_REG));
+
+			CWnd* pWnd = this;
+			return pWnd->Create(UPDOWN_CLASS, NULL, dwStyle, rect, pParentWnd, nID);
+		}
+
+		CWnd* GetBuddy() const
+		{
+			ASSERT(::IsWindow(m_hWnd)); return CWnd::FromHandle((HWND) ::SendMessage(m_hWnd, UDM_GETBUDDY, 0, 0l));
+		}
+
+		CWnd* SetBuddy(CWnd* pWndBuddy)
+		{
+			ASSERT(::IsWindow(m_hWnd)); return CWnd::FromHandle((HWND) ::SendMessage(m_hWnd, UDM_SETBUDDY, (WPARAM)pWndBuddy->GetSafeHwnd(), 0L));
+		}
+
 };
 
 class CStaticMTL : public CStaticT<CWnd>
 {
 	public:
-		virtual ~CStatic() { DestroyWindow(); }
+		virtual ~CStaticMTL() { DestroyWindow(); }
 
 	public:
 	public:
@@ -278,9 +545,20 @@ class CStaticMTL : public CStaticT<CWnd>
 
 class CStatusBarCtrlMTL : public CStatusBarCtrlT<CWnd>
 {
-public:
-public:
-public:
+	public:
+		virtual ~CStatusBarCtrlMTL() { DestroyWindow(); }
+
+	public:
+	public:
+		BOOL Create(DWORD dwStyle, const RECT& rect, CWnd* pParentWnd, UINT nID)
+		{
+			// initialize common controls
+			VERIFY(AfxDeferRegisterClass(AFX_WNDCOMMCTL_BAR_REG));
+
+			CWnd* pWnd = this;
+			return pWnd->Create(STATUSCLASSNAME, NULL, dwStyle, rect, pParentWnd, nID);
+		}
+
 };
 
 class CTabCtrlMTL : public CTabCtrlT<CWnd>
@@ -301,8 +579,7 @@ class CTabCtrlMTL : public CTabCtrlT<CWnd>
 			return pWnd->Create(WC_TABCONTROL, NULL, dwStyle, rect, pParentWnd, nID);
 		}
 
-		BOOL CTabCtrl::CreateEx(DWORD dwExStyle, DWORD dwStyle, const RECT& rect,
-			CWnd* pParentWnd, UINT nID)
+		BOOL CreateEx(DWORD dwExStyle, DWORD dwStyle, const RECT& rect, CWnd* pParentWnd, UINT nID)
 		{
 			BOOL bRet = Create(dwStyle, rect, pParentWnd, nID);
 			if (bRet && dwExStyle != 0)
@@ -317,9 +594,14 @@ class CTabCtrlMTL : public CTabCtrlT<CWnd>
 			ASSERT(::IsWindow(m_hWnd)); return (DWORD) ::SendMessage(m_hWnd, TCM_GETEXTENDEDSTYLE, 0, 0);
 		}
 
-		CImageList* GetImageList() const
+		CImageListMTL* GetImageList() const
 		{
-			ASSERT(::IsWindow(m_hWnd)); return CImageList::FromHandle((HIMAGELIST)::SendMessage(m_hWnd, TCM_GETIMAGELIST, 0, 0L));
+			ASSERT(::IsWindow(m_hWnd)); return CImageListMTL::FromHandle((HIMAGELIST)::SendMessage(m_hWnd, TCM_GETIMAGELIST, 0, 0L));
+		}
+
+		CToolTipCtrlMTL* GetToolTips() const
+		{
+			ASSERT(::IsWindow(m_hWnd)); return (CToolTipCtrlMTL*)CWnd::FromHandle((HWND)::SendMessage(m_hWnd, TCM_GETTOOLTIPS, 0, 0L));
 		}
 
 		DWORD SetExtendedStyle(DWORD dwNewStyle, DWORD dwExMask /*= 0*/)
@@ -327,10 +609,13 @@ class CTabCtrlMTL : public CTabCtrlT<CWnd>
 			ASSERT(::IsWindow(m_hWnd)); return (DWORD) ::SendMessage(m_hWnd, TCM_SETEXTENDEDSTYLE, dwExMask, dwNewStyle);
 		}
 
-		CImageList* SetImageList(CImageList* pImageList)
+		CImageListMTL* SetImageList(CImageListMTL* pImageList)
 		{
-			ASSERT(::IsWindow(m_hWnd)); return CImageList::FromHandle((HIMAGELIST)::SendMessage(m_hWnd, TCM_SETIMAGELIST, 0, (LPARAM)pImageList->GetSafeHandle()));
+			ASSERT(::IsWindow(m_hWnd)); return CImageListMTL::FromHandle((HIMAGELIST)::SendMessage(m_hWnd, TCM_SETIMAGELIST, 0, (LPARAM)pImageList->GetSafeHandle()));
 		}
+
+		void SetToolTips(CToolTipCtrlMTL* pWndTip) ;
+
 };
 
 class CToolBarCtrlMTL : public CToolBarCtrlT<CWnd>
@@ -348,6 +633,37 @@ class CToolBarCtrlMTL : public CToolBarCtrlT<CWnd>
 		{
 			ASSERT(::IsWindow(m_hWnd)); return (DWORD) ::SendMessage(m_hWnd, TB_SETEXTENDEDSTYLE, 0, dwExStyle);
 		}
+
+		CImageListMTL* GetDisabledImageList() const
+		{
+			ASSERT(::IsWindow(m_hWnd)); return CImageListMTL::FromHandle((HIMAGELIST) ::SendMessage(m_hWnd, TB_GETDISABLEDIMAGELIST, 0, 0));
+		}
+
+		CImageListMTL* GetHotImageList() const
+		{
+			ASSERT(::IsWindow(m_hWnd)); return CImageListMTL::FromHandle((HIMAGELIST) ::SendMessage(m_hWnd, TB_GETHOTIMAGELIST, 0, 0));
+		}
+
+		CImageListMTL* GetImageList() const
+		{
+			ASSERT(::IsWindow(m_hWnd)); return CImageListMTL::FromHandle((HIMAGELIST) ::SendMessage(m_hWnd, TB_GETIMAGELIST, 0, 0));
+		}
+
+		CImageListMTL* SetDisabledImageList(CImageListMTL* pImageList)
+		{
+			ASSERT(::IsWindow(m_hWnd)); return CImageListMTL::FromHandle((HIMAGELIST) ::SendMessage(m_hWnd, TB_SETDISABLEDIMAGELIST, 0, (LPARAM)pImageList->GetSafeHandle()));
+		}
+
+		CImageListMTL* SetHotImageList(CImageListMTL* pImageList)
+		{
+			ASSERT(::IsWindow(m_hWnd)); return CImageListMTL::FromHandle((HIMAGELIST) ::SendMessage(m_hWnd, TB_SETHOTIMAGELIST, 0, (LPARAM)pImageList->GetSafeHandle()));
+		}
+
+		CImageListMTL* SetImageList(CImageListMTL* pImageList)
+		{
+			ASSERT(::IsWindow(m_hWnd)); return CImageListMTL::FromHandle((HIMAGELIST) ::SendMessage(m_hWnd, TB_SETIMAGELIST, 0, (LPARAM)pImageList->GetSafeHandle()));
+		}
+
 };
 
 
@@ -356,7 +672,7 @@ class CToolTipCtrlMTL : public CToolTipCtrlT<CWnd>
 	DECLARE_DYNAMIC(CToolTipCtrlMTL)
 	
 	public:
-		~CToolTipCtrl() { DestroyWindow(); }
+		virtual ~CToolTipCtrlMTL() { DestroyWindow(); }
 
 	public:
 	public:
@@ -374,7 +690,40 @@ class CToolTipCtrlMTL : public CToolTipCtrlT<CWnd>
 				SetOwner(pParentWnd);
 			return bResult;
 		}
+
+		CToolTipCtrlMTL* GetToolTips() const
+		{
+			ASSERT(::IsWindow(m_hWnd)); return (CToolTipCtrlMTL*)CWnd::FromHandle((HWND)::SendMessage(m_hWnd, TB_GETTOOLTIPS, 0, 0L));
+		}
+		void SetToolTips(CToolTipCtrlMTL* pTip)
+		{
+			ASSERT(::IsWindow(m_hWnd)); ::SendMessage(m_hWnd, TB_SETTOOLTIPS, (WPARAM)pTip->GetSafeHwnd(), 0L);
+		}
+		void SetOwner(CWnd* pWnd)
+		{
+			ASSERT(::IsWindow(m_hWnd)); ::SendMessage(m_hWnd, TB_SETPARENT, (WPARAM)pWnd->GetSafeHwnd(), 0L);
+		}
 };
+
+_INLINE CToolTipCtrlMTL* CListCtrlMTL::SetToolTips(CToolTipCtrlMTL* pTip)
+{
+	ASSERT(::IsWindow(m_hWnd)); return (CToolTipCtrlMTL*)CWnd::FromHandle((HWND)::SendMessage(m_hWnd, LVM_SETTOOLTIPS, 0, (LPARAM)pTip->GetSafeHwnd()));
+}
+
+_INLINE void CReBarCtrlMTL::SetToolTips(CToolTipCtrlMTL* pTip)
+{
+	ASSERT(::IsWindow(m_hWnd)); ::SendMessage(m_hWnd, RB_SETTOOLTIPS, (WPARAM)pTip->m_hWnd, 0L);
+}
+
+_INLINE void CSliderCtrlMTL::SetToolTips(CToolTipCtrlMTL* pTip)
+{
+	ASSERT(::IsWindow(m_hWnd)); ::SendMessage(m_hWnd, TBM_SETTOOLTIPS, (WPARAM)pTip->GetSafeHwnd(), 0L);
+}
+
+_INLINE void CTabCtrlMTL::SetToolTips(CToolTipCtrlMTL* pWndTip)
+{
+	ASSERT(::IsWindow(m_hWnd)); ::SendMessage(m_hWnd, TCM_SETTOOLTIPS, (WPARAM)pWndTip->GetSafeHwnd(), 0L);
+}
 
 class CTrackBarCtrlMTL : public CTrackBarCtrlT<CWnd>
 {
@@ -386,10 +735,19 @@ public:
 class CTreeCtrlMTL : public CTreeViewCtrlT<CWnd>
 {
 	public:
-		~CTreeCtrlMTL() { DestroyWindow(); }
+		virtual ~CTreeCtrlMTL() { DestroyWindow(); }
 
 	public:
 	public:
+		BOOL Create(DWORD dwStyle, const RECT& rect, CWnd* pParentWnd, UINT nID)
+		{
+			// initialize common controls
+			VERIFY(AfxDeferRegisterClass(AFX_WNDCOMMCTL_TREEVIEW_REG));
+
+			CWnd* pWnd = this;
+			return pWnd->Create(WC_TREEVIEW, NULL, dwStyle, rect, pParentWnd, nID);
+		}
+
 		CImageList* CreateDragImage(HTREEITEM hItem)
 		{
 			ASSERT(::IsWindow(m_hWnd));
@@ -403,7 +761,12 @@ class CTreeCtrlMTL : public CTreeViewCtrlT<CWnd>
 			return pImageList;
 		}
 
-		CEdit* GetEditControl() const
+		CEditMTL* EditLabel(HTREEITEM hItem)
+		{
+			ASSERT(::IsWindow(m_hWnd)); return (CEdit*)CWnd::FromHandle((HWND)::SendMessage(m_hWnd, TVM_EDITLABEL, 0, (LPARAM)hItem));
+		}
+
+		CEditMTL* GetEditControl() const
 		{
 			ASSERT(::IsWindow(m_hWnd)); return (CEdit*)CWnd::FromHandle((HWND)::SendMessage(m_hWnd, TVM_GETEDITCONTROL, 0, 0));
 		}
@@ -413,7 +776,7 @@ class CTreeCtrlMTL : public CTreeViewCtrlT<CWnd>
 			ASSERT(::IsWindow(m_hWnd)); return (DWORD) ::SendMessage(m_hWnd, TVM_GETEXTENDEDSTYLE, (WPARAM)0, 0);
 		}
 
-		CImageList* GetImageList(int nImageList) const
+		CImageListMTL* GetImageList(int nImageList) const
 		{
 			ASSERT(::IsWindow(m_hWnd)); return CImageList::FromHandle((HIMAGELIST)::SendMessage(m_hWnd, TVM_GETIMAGELIST, (WPARAM)nImageList, 0));
 		}
@@ -439,7 +802,7 @@ class CTreeCtrlMTL : public CTreeViewCtrlT<CWnd>
 			return str;
 		}
 
-		CToolTipCtrl* GetToolTips() const
+		CToolTipCtrlMTL* GetToolTips() const
 		{
 			ASSERT(::IsWindow(m_hWnd)); return (CToolTipCtrl*)CWnd::FromHandle((HWND)::SendMessage(m_hWnd, TVM_GETTOOLTIPS, 0, 0L));
 		}
@@ -454,7 +817,7 @@ class CTreeCtrlMTL : public CTreeViewCtrlT<CWnd>
 			ASSERT(::IsWindow(m_hWnd)); return CImageList::FromHandle((HIMAGELIST)::SendMessage(m_hWnd, TVM_SETIMAGELIST, (WPARAM)nImageList, (LPARAM)pImageList->GetSafeHandle()));
 		}
 
-		CToolTipCtrl* SetToolTips(CToolTipCtrl* pWndTip)
+		CToolTipCtrlMTL* SetToolTips(CToolTipCtrl* pWndTip)
 		{
 			ASSERT(::IsWindow(m_hWnd)); return (CToolTipCtrl*)CWnd::FromHandle((HWND)::SendMessage(m_hWnd, TVM_SETTOOLTIPS, (WPARAM)pWndTip->GetSafeHwnd(), 0L));
 		}
@@ -480,39 +843,6 @@ class CUpDownCtrlMTL : public CUpDownCtrlT<CWnd>
 public:
 public:
 public:
-};
-
-class CReBarCtrlMTL : public CReBarCtrlT<CWnd>
-{
-public:
-public:
-public:
-};
-
-class CPagerCtrlMTL : public CPagerCtrlT<CWnd>
-{
-public:
-public:
-public:
-};
-
-class CSpinButtonCtrlMTL : public CUpDownCtrlT<CWnd>
-{
-	public:
-		~CSpinButtonCtrlMTL() { DestroyWindow(); }
-
-	public:
-	public:
-		CWnd* GetBuddy() const
-		{
-			ASSERT(::IsWindow(m_hWnd)); return CWnd::FromHandle((HWND) ::SendMessage(m_hWnd, UDM_GETBUDDY, 0, 0l));
-		}
-
-		CWnd* SetBuddy(CWnd* pWndBuddy)
-		{
-			ASSERT(::IsWindow(m_hWnd)); return CWnd::FromHandle((HWND) ::SendMessage(m_hWnd, UDM_SETBUDDY, (WPARAM)pWndBuddy->GetSafeHwnd(), 0L));
-		}
-
 };
 
 

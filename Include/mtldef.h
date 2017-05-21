@@ -177,9 +177,6 @@
 #define AFX_CY_BORDER_GRIPPER 2
 
 
-#define _AFX_MRU_COUNT   4      // default support for 4 entries in file MRU
-#define _AFX_MRU_MAX_COUNT 16   // currently allocated id range supports 16
-
 // Frame window menu bar visibility states
 #define AFX_MBS_VISIBLE 0x01L // visible
 #define AFX_MBS_HIDDEN  0x02L // hidden
@@ -188,6 +185,10 @@
 #define AFX_MBV_KEEPVISIBLE    0x01L // always visible
 #define AFX_MBV_DISPLAYONFOCUS 0x02L // toggle state on ALT
 #define AFX_MBV_DISPLAYONF10   0x04L // display on F10
+
+
+#define _AFX_MRU_COUNT   4      // default support for 4 entries in file MRU
+#define _AFX_MRU_MAX_COUNT 16   // currently allocated id range supports 16
 
 
 #define _AFX_TEMP_CLASS_NAME_SIZE 96
@@ -827,51 +828,6 @@ typedef UINT(_CDECL *AFX_THREADPROC)(LPVOID);
 ///////////////////////////////////////////////////////////////////////////////
 // Message map macro for cracked handlers
 
-#if 0 //FXN
-
-class CCmdTarget;
-class CCmdUI ;
-
-typedef void (CCmdTarget::*AFX_PMSG)(void);
-
-union MessageMapFunctions
-{
-	AFX_PMSG pfn;   // generic member function pointer
-
-	// specific type safe variants for WM_COMMAND and WM_NOTIFY messages
-	void (CCmdTarget::*pfnCmd_v_v)();
-	BOOL(CCmdTarget::*pfnCmd_b_v)();
-	void (CCmdTarget::*pfnCmd_v_u)(UINT);
-	BOOL(CCmdTarget::*pfnCmd_b_u)(UINT);
-
-	void (CCmdTarget::*pfnNotify_v_NMHDR_pl)(NMHDR*, LRESULT*);
-	BOOL(CCmdTarget::*pfnNotify_b_NMHDR_pl)(NMHDR*, LRESULT*);
-	void (CCmdTarget::*pfnNotify_v_u_NMHDR_pl)(UINT, NMHDR*, LRESULT*);
-	BOOL(CCmdTarget::*pfnNotify_b_u_NMHDR_pl)(UINT, NMHDR*, LRESULT*);
-	void (CCmdTarget::*pfnCmdUI_v_C)(CCmdUI*);
-	void (CCmdTarget::*pfnCmdUI_v_C_u)(CCmdUI*, UINT);
-
-	void (CCmdTarget::*pfnCmd_v_pv)(void*);
-	BOOL(CCmdTarget::*pfnCmd_b_pv)(void*);
-} ;
-
-_INLINE union MessageMapFunctions FxnToMmf(AFX_PMSG memberFxn)
-{
-	PTM_WARNING_DISABLE
-	AFX_PMSG pfnFunc[] = { memberFxn }; union MessageMapFunctions mmf ; mmf.pfn = pfnFunc[0] ;
-	PTM_WARNING_RESTORE
-	return mmf;
-}
-
-#ifndef PTM_WARNING_DISABLE
-#define PTM_WARNING_DISABLE \
-	__pragma(warning( push )) \
-	__pragma(warning( disable : 4867 ))
-#define PTM_WARNING_RESTORE \
-	__pragma(warning( pop ))
-#endif
-
-#endif //FXN
 
 #define MEMBER_FXN_COMPATIBLE(f) (f)
 #define MEMBER_FXN_STANDARD(f) (this->*(f))

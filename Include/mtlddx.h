@@ -221,9 +221,7 @@ _INLINE void DDX_Text(CDataExchange* pDX, int nIDC, double& value)
 
 _INLINE void DDX_Check(CDataExchange* pDX, int nIDC, int& value)
 {
-	pDX->PrepareCtrl(nIDC);
-	HWND hWndCtrl;
-	pDX->m_pDlgWnd->GetDlgItem(nIDC, &hWndCtrl);
+	HWND hWndCtrl = pDX->PrepareCtrl(nIDC);
 	if (pDX->m_bSaveAndValidate)
 	{
 		value = (int)::SendMessage(hWndCtrl, BM_GETCHECK, 0, 0L);
@@ -243,9 +241,7 @@ _INLINE void DDX_Check(CDataExchange* pDX, int nIDC, int& value)
 _INLINE void DDX_Radio(CDataExchange* pDX, int nIDC, int& value)
 // must be first in a group of auto radio buttons
 {
-	pDX->PrepareCtrl(nIDC);
-	HWND hWndCtrl;
-	pDX->m_pDlgWnd->GetDlgItem(nIDC, &hWndCtrl);
+	HWND hWndCtrl = pDX->PrepareCtrl(nIDC);
 
 	ASSERT(::GetWindowLong(hWndCtrl, GWL_STYLE) & WS_GROUP);
 	ASSERT(::SendMessage(hWndCtrl, WM_GETDLGCODE, 0, 0L) & DLGC_RADIOBUTTON);
@@ -281,8 +277,7 @@ _INLINE void DDX_Radio(CDataExchange* pDX, int nIDC, int& value)
 		}
 		hWndCtrl = ::GetWindow(hWndCtrl, GW_HWNDNEXT);
 
-	} while (hWndCtrl != NULL &&
-		!(GetWindowLong(hWndCtrl, GWL_STYLE) & WS_GROUP));
+	} while (hWndCtrl != NULL && !(GetWindowLong(hWndCtrl, GWL_STYLE) & WS_GROUP));
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -290,9 +285,7 @@ _INLINE void DDX_Radio(CDataExchange* pDX, int nIDC, int& value)
 
 _INLINE void DDX_LBString(CDataExchange* pDX, int nIDC, CString& value)
 {
-	pDX->PrepareCtrl(nIDC);
-	HWND hWndCtrl;
-	pDX->m_pDlgWnd->GetDlgItem(nIDC, &hWndCtrl);
+	HWND hWndCtrl = pDX->PrepareCtrl(nIDC);
 	if (pDX->m_bSaveAndValidate)
 	{
 		int nIndex = (int)::SendMessage(hWndCtrl, LB_GETCURSEL, 0, 0L);
@@ -323,9 +316,7 @@ _INLINE void DDX_LBString(CDataExchange* pDX, int nIDC, CString& value)
 
 _INLINE void DDX_LBStringExact(CDataExchange* pDX, int nIDC, CString& value)
 {
-	pDX->PrepareCtrl(nIDC);
-	HWND hWndCtrl;
-	pDX->m_pDlgWnd->GetDlgItem(nIDC, &hWndCtrl);
+	HWND hWndCtrl = pDX->PrepareCtrl(nIDC);
 	if (pDX->m_bSaveAndValidate)
 	{
 		DDX_LBString(pDX, nIDC, value);
@@ -350,16 +341,11 @@ _INLINE void DDX_LBStringExact(CDataExchange* pDX, int nIDC, CString& value)
 
 _INLINE void DDX_CBString(CDataExchange* pDX, int nIDC, CString& value)
 {
-	HWND hWndCtrl;
-	pDX->m_pDlgWnd->GetDlgItem(nIDC, &hWndCtrl);
+	HWND hWndCtrl = pDX->PrepareCtrl(nIDC);
 
 	if ((::GetWindowLong(hWndCtrl, GWL_STYLE) & CBS_DROPDOWNLIST) != CBS_DROPDOWNLIST)
 	{
 		pDX->PrepareEditCtrl(nIDC);
-	}
-	else
-	{
-		pDX->PrepareCtrl(nIDC);
 	}
 
 	if (pDX->m_bSaveAndValidate)
@@ -392,16 +378,11 @@ _INLINE void DDX_CBString(CDataExchange* pDX, int nIDC, CString& value)
 
 _INLINE void DDX_CBStringExact(CDataExchange* pDX, int nIDC, CString& value)
 {
-	HWND hWndCtrl;
-	pDX->m_pDlgWnd->GetDlgItem(nIDC, &hWndCtrl);
+	HWND hWndCtrl = pDX->PrepareCtrl(nIDC);
 
 	if ((::GetWindowLong(hWndCtrl, GWL_STYLE) & CBS_DROPDOWNLIST) != CBS_DROPDOWNLIST)
 	{
 		pDX->PrepareEditCtrl(nIDC);
-	}
-	else
-	{
-		pDX->PrepareCtrl(nIDC);
 	}
 
 	if (pDX->m_bSaveAndValidate)
@@ -411,8 +392,7 @@ _INLINE void DDX_CBStringExact(CDataExchange* pDX, int nIDC, CString& value)
 	else
 	{
 		// set current selection based on data string
-		int i = (int)::SendMessage(hWndCtrl, CB_FINDSTRINGEXACT, (WPARAM)-1,
-			(LPARAM)(LPCTSTR)value);
+		int i = (int)::SendMessage(hWndCtrl, CB_FINDSTRINGEXACT, (WPARAM)-1, (LPARAM)(LPCTSTR)value);
 		if (i < 0)
 		{
 			// just set the edit text (will be ignored if DROPDOWNLIST)
@@ -428,9 +408,7 @@ _INLINE void DDX_CBStringExact(CDataExchange* pDX, int nIDC, CString& value)
 
 _INLINE void DDX_LBIndex(CDataExchange* pDX, int nIDC, int& index)
 {
-	pDX->PrepareCtrl(nIDC);
-	HWND hWndCtrl;
-	pDX->m_pDlgWnd->GetDlgItem(nIDC, &hWndCtrl);
+	HWND hWndCtrl = pDX->PrepareCtrl(nIDC);
 	if (pDX->m_bSaveAndValidate)
 		index = (int)::SendMessage(hWndCtrl, LB_GETCURSEL, 0, 0L);
 	else
@@ -439,21 +417,16 @@ _INLINE void DDX_LBIndex(CDataExchange* pDX, int nIDC, int& index)
 
 _INLINE void DDX_CBIndex(CDataExchange* pDX, int nIDC, int& index)
 {
-	pDX->PrepareCtrl(nIDC);
-	HWND hWndCtrl;
-	pDX->m_pDlgWnd->GetDlgItem(nIDC, &hWndCtrl);
+	HWND hWndCtrl = pDX->PrepareCtrl(nIDC);
 	if (pDX->m_bSaveAndValidate)
 		index = (int)::SendMessage(hWndCtrl, CB_GETCURSEL, 0, 0L);
 	else
-
 		::SendMessage(hWndCtrl, CB_SETCURSEL, (WPARAM)index, 0L);
 }
 
 _INLINE void DDX_Scroll(CDataExchange* pDX, int nIDC, int& value)
 {
-	pDX->PrepareCtrl(nIDC);
-	HWND hWndCtrl;
-	pDX->m_pDlgWnd->GetDlgItem(nIDC, &hWndCtrl);
+	HWND hWndCtrl = pDX->PrepareCtrl(nIDC);
 	if (pDX->m_bSaveAndValidate)
 		value = GetScrollPos(hWndCtrl, SB_CTL);
 	else
@@ -462,9 +435,7 @@ _INLINE void DDX_Scroll(CDataExchange* pDX, int nIDC, int& value)
 
 _INLINE void DDX_Slider(CDataExchange* pDX, int nIDC, int& value)
 {
-	pDX->PrepareCtrl(nIDC);
-	HWND hWndCtrl;
-	pDX->m_pDlgWnd->GetDlgItem(nIDC, &hWndCtrl);
+	HWND hWndCtrl = pDX->PrepareCtrl(nIDC);
 	if (pDX->m_bSaveAndValidate)
 		value = (int) ::SendMessage(hWndCtrl, TBM_GETPOS, 0, 0l);
 	else
@@ -473,9 +444,7 @@ _INLINE void DDX_Slider(CDataExchange* pDX, int nIDC, int& value)
 
 _INLINE void DDX_IPAddress(CDataExchange* pDX, int nIDC, DWORD& value)
 {
-	pDX->PrepareCtrl(nIDC);
-	HWND hWndCtrl;
-	pDX->m_pDlgWnd->GetDlgItem(nIDC, &hWndCtrl);
+	HWND hWndCtrl = pDX->PrepareCtrl(nIDC);
 	if (pDX->m_bSaveAndValidate)
 		::SendMessage(hWndCtrl, IPM_GETADDRESS, 0, (LPARAM)&value);
 	else
@@ -492,62 +461,48 @@ _INLINE void DDX_IPAddress(CDataExchange* pDX, int nIDC, DWORD& value)
 /////////////////////////////////////////////////////////////////////////////
 // Validation procs
 
+#define _DDV_VALUE_MIN_MAX(v, min, max) \
+			ASSERT(min <= max); if (v < min) v = min; else if (v > max) v = max;
 
 //NOTE: don't use overloaded function names to avoid type ambiguities
 _INLINE void DDV_MinMaxByte(CDataExchange* pDX, BYTE& value, BYTE minVal, BYTE maxVal)
 {
-	ASSERT(minVal <= maxVal);
-	if (value < minVal) value = minVal ;
-	else if (value > maxVal) value = maxVal ;
+	_DDV_VALUE_MIN_MAX(value, minVal, maxVal) ;
 }
 
 _INLINE void DDV_MinMaxShort(CDataExchange* pDX, short& value, short minVal, short maxVal)
 {
-	ASSERT(minVal <= maxVal);
-	if (value < minVal) value = minVal;
-	else if (value > maxVal) value = maxVal;
+	_DDV_VALUE_MIN_MAX(value, minVal, maxVal);
 }
 
 _INLINE void DDV_MinMaxInt(CDataExchange* pDX, int& value, int minVal, int maxVal)
 {
-	ASSERT(minVal <= maxVal);
-	if (value < minVal) value = minVal;
-	else if (value > maxVal) value = maxVal;
+	_DDV_VALUE_MIN_MAX(value, minVal, maxVal);
 }
 
 _INLINE void DDV_MinMaxLong(CDataExchange* pDX, long& value, long minVal, long maxVal)
 {
-	ASSERT(minVal <= maxVal);
-	if (value < minVal) value = minVal;
-	else if (value > maxVal) value = maxVal;
+	_DDV_VALUE_MIN_MAX(value, minVal, maxVal);
 }
 
 _INLINE void DDV_MinMaxUInt(CDataExchange* pDX, UINT& value, UINT minVal, UINT maxVal)
 {
-	ASSERT(minVal <= maxVal);
-	if (value < minVal) value = minVal;
-	else if (value > maxVal) value = maxVal;
+	_DDV_VALUE_MIN_MAX(value, minVal, maxVal);
 }
 
 _INLINE void DDV_MinMaxDWord(CDataExchange* pDX, DWORD& value, DWORD minVal, DWORD maxVal)
 {
-	ASSERT(minVal <= maxVal);
-	if (value < minVal) value = minVal;
-	else if (value > maxVal) value = maxVal;
+	_DDV_VALUE_MIN_MAX(value, minVal, maxVal);
 }
 
 _INLINE void DDV_MinMaxLongLong(CDataExchange* pDX, LONGLONG& value, LONGLONG minVal, LONGLONG maxVal)
 {
-	ASSERT(minVal <= maxVal);
-	if (value < minVal) value = minVal;
-	else if (value > maxVal) value = maxVal;
+	_DDV_VALUE_MIN_MAX(value, minVal, maxVal);
 }
 
 _INLINE void DDV_MinMaxULongLong(CDataExchange* pDX, ULONGLONG& value, ULONGLONG minVal, ULONGLONG maxVal)
 {
-	ASSERT(minVal <= maxVal);
-	if (value < minVal) value = minVal;
-	else if (value > maxVal) value = maxVal;
+	_DDV_VALUE_MIN_MAX(value, minVal, maxVal);
 }
 
 _INLINE void DDV_MinMaxSlider(CDataExchange* pDX, DWORD& value, DWORD minVal, DWORD maxVal)
@@ -568,16 +523,12 @@ _INLINE void DDV_MinMaxSlider(CDataExchange* pDX, DWORD& value, DWORD minVal, DW
 
 _INLINE void DDV_MinMaxFloat(CDataExchange* pDX, float& value, float minVal, float maxVal)
 {
-	ASSERT(minVal <= maxVal);
-	if (value < minVal) value = minVal;
-	else if (value > maxVal) value = maxVal;
+	_DDV_VALUE_MIN_MAX(value, minVal, maxVal);
 }
 
 _INLINE void DDV_MinMaxDouble(CDataExchange* pDX, double& value, double minVal, double maxVal)
 {
-	ASSERT(minVal <= maxVal);
-	if (value < minVal) value = minVal;
-	else if (value > maxVal) value = maxVal;
+	_DDV_VALUE_MIN_MAX(value, minVal, maxVal);
 }
 
 

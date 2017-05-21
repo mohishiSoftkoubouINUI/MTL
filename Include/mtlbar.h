@@ -8,8 +8,8 @@
 class CControlBar ;
 class CDockBar ;
 
-#define HORZF(dw) (dw & CBRS_ORIENT_HORZ)
-#define VERTF(dw) (dw & CBRS_ORIENT_VERT)
+#define _HORZF(dw) (dw & CBRS_ORIENT_HORZ)
+#define _VERTF(dw) (dw & CBRS_ORIENT_VERT)
 
 #define m_rectRequestedSize     m_rectDragHorz
 #define m_rectActualSize        m_rectDragVert
@@ -96,16 +96,16 @@ class CDockContext
 			CBrush* pDitherBrush = CDC::GetHalftoneBrush();
 			CBrush* pBrush = pWhiteBrush;
 
-			if (HORZF(m_dwOverDockStyle))
+			if (_HORZF(m_dwOverDockStyle))
 				rect = m_rectDragHorz;
-			else if (VERTF(m_dwOverDockStyle))
+			else if (_VERTF(m_dwOverDockStyle))
 				rect = m_rectDragVert;
 			else
 			{
 				// use thick frame instead
 				size.cx = GetSystemMetrics(SM_CXFRAME) - AFX_CX_BORDER;
 				size.cy = GetSystemMetrics(SM_CYFRAME) - AFX_CY_BORDER;
-				if ((HORZF(m_dwStyle) && !m_bFlip) || (VERTF(m_dwStyle) && m_bFlip))
+				if ((_HORZF(m_dwStyle) && !m_bFlip) || (_VERTF(m_dwStyle) && m_bFlip))
 					rect = m_rectFrameDragHorz;
 				else
 					rect = m_rectFrameDragVert;
@@ -114,7 +114,7 @@ class CDockContext
 			if (bRemoveRect)
 				size.cx = size.cy = 0;
 
-			if ((HORZF(m_dwOverDockStyle) || VERTF(m_dwOverDockStyle)))
+			if ((_HORZF(m_dwOverDockStyle) || _VERTF(m_dwOverDockStyle)))
 			{
 				// looks better one pixel in (makes the bar look pushed down)
 				rect.InflateRect(-AFX_CX_BORDER, -AFX_CY_BORDER);
@@ -183,13 +183,14 @@ class CDockContext
 			if (*pFlag != bNewValue)
 			{
 				*pFlag = bNewValue;
-				m_bFlip = (HORZF(m_dwDockStyle) && VERTF(m_dwDockStyle) && m_bFlip); // shift key
+				m_bFlip = (_HORZF(m_dwDockStyle) && _VERTF(m_dwDockStyle) && m_bFlip); // shift key
 				m_dwOverDockStyle = (m_bForceFrame) ? 0 : CanDock();
 				DrawFocusRect();
 			}
 		}
 
 };
+
 
 
 class CControlBar : public CWnd
@@ -734,7 +735,7 @@ class CControlBar : public CWnd
 
 		void SetBorders(LPCRECT lpRect) { SetBorders(lpRect->left, lpRect->top, lpRect->right, lpRect->bottom); }
 
-		void SetBorders(int cxLeft, int cyTop, int cxRight, int cyBottom)
+		void SetBorders(int cxLeft = 0, int cyTop = 0, int cxRight = 0, int cyBottom = 0)
 		{
 			ASSERT(cxLeft >= 0);
 			ASSERT(cyTop >= 0);
@@ -1574,3 +1575,342 @@ class CDialogBar : public CControlBar
 
 //BEGIN_MESSAGE_MAP(CDialogBar, CControlBar)
 //END_MESSAGE_MAP()
+
+
+/*============================================================================*/
+// CReBar control
+
+typedef struct tagAFX_OLDREBARBANDINFO{
+	UINT cbSize;
+	UINT fMask;
+	UINT fStyle;
+	COLORREF clrFore;
+	COLORREF clrBack;
+	LPTSTR lpText;
+	UINT cch;
+	int iImage;
+	HWND hwndChild;
+	UINT cxMinChild;
+	UINT cyMinChild;
+	UINT cx;
+	HBITMAP hbmBack;
+	UINT wID;
+	UINT cyChild;
+	UINT cyMaxChild;
+	UINT cyIntegral;
+	UINT cxIdeal;
+	LPARAM lParam;
+	UINT cxHeader;
+} AFX_OLDREBARBANDINFO;
+
+class CReBarCtrl;
+
+class CReBar : public CControlBar
+{
+	//DECLARE_DYNAMIC(CReBar)
+
+	public:
+
+		CReBar()
+		{
+			if (_AfxGetComCtlVersion() < MAKELONG(1, 6))
+			{
+				// For 6.0 common controls, the call to RB_INSERTBAND will fail
+				// if the 6.1 size is passed in. So, the old size must be used 
+				// instead.
+				m_nReBarBandInfoSize = sizeof(AFX_OLDREBARBANDINFO);
+			}
+			else
+			{
+				m_nReBarBandInfoSize = sizeof(REBARBANDINFO);
+			}
+
+			SetBorders();
+		}
+
+	public:
+		DECLARE_MESSAGE_MAP()
+
+		UINT m_nReBarBandInfoSize;
+
+		// Construction
+	public:
+
+		// Attributes
+	public:
+		virtual LRESULT WindowProc(UINT message, WPARAM wParam, LPARAM lParam)
+		{
+			// special handling for certain messages (forwarding to owner/parent)
+			switch (message)
+			{
+				case WM_POPMESSAGESTRING:
+				case WM_SETMESSAGESTRING:
+				{
+					CWnd* pOwner = GetOwner();
+					ENSURE(pOwner);
+					return pOwner->SendMessage(message, wParam, lParam);
+				}
+			}
+
+			return CControlBar::WindowProc(message, wParam, lParam);
+		}
+
+		BOOL _AddBar(CWnd* pBar, REBARBANDINFO* pRBBI) ;
+			
+
+		BOOL OnEraseBkgnd(CDC* pDC) { return (BOOL)Default(); }
+
+		void OnHeightChange(NMHDR* pNMHDR, LRESULT* pResult) ;
+
+		void OnNcCalcSize(BOOL bCalcValidRects, NCCALCSIZE_PARAMS* lpncsp)
+		{
+			// calculate border space (will add to top/bottom, subtract from right/bottom)
+			CRect rect; rect.SetRectEmpty();
+			BOOL bHorz = (m_dwStyle & CBRS_ORIENT_HORZ) != 0;
+			CControlBar::CalcInsideRect(rect, bHorz);
+
+			// adjust non-client area for border space
+			lpncsp->rgrc[0].left += rect.left;
+			lpncsp->rgrc[0].top += rect.top;
+			lpncsp->rgrc[0].right += rect.right;
+			lpncsp->rgrc[0].bottom += rect.bottom;
+		}
+
+		BOOL OnNcCreate(LPCREATESTRUCT lpCreateStruct)
+		{
+			if (!CControlBar::OnNcCreate(lpCreateStruct))
+				return FALSE;
+
+			// if the owner was set before the rebar was created, set it now
+			if (m_hWndOwner != NULL)
+				DefWindowProc(RB_SETPARENT, (WPARAM)m_hWndOwner, 0);
+
+			return TRUE;
+		}
+
+		void OnNcPaint() { EraseNonClient(); }
+
+		void OnPaint() { Default(); }
+
+		void OnRecalcParent() ;
+			
+		LRESULT OnShowBand(WPARAM wParam, LPARAM lParam)
+		{
+			LRESULT lResult = Default();
+			if (lResult)
+			{
+				// keep window visible state in sync with band visible state
+				REBARBANDINFO rbBand;
+				rbBand.cbSize = m_nReBarBandInfoSize;
+				rbBand.fMask = RBBIM_CHILD | RBBIM_STYLE;
+				VERIFY(DefWindowProc(RB_GETBANDINFO, wParam, (LPARAM)&rbBand));
+				CControlBar* pBar = DYNAMIC_DOWNCAST(CControlBar, CWnd::FromHandlePermanent(rbBand.hwndChild));
+				BOOL bWindowVisible;
+				if (pBar != NULL)
+					bWindowVisible = pBar->IsVisible();
+				else
+					bWindowVisible = (::GetWindowLong(rbBand.hwndChild, GWL_STYLE) & WS_VISIBLE) != 0;
+				BOOL bBandVisible = (rbBand.fStyle & RBBS_HIDDEN) == 0;
+				if (bWindowVisible != bBandVisible)
+					VERIFY(::ShowWindow(rbBand.hwndChild, bBandVisible ? SW_SHOW : SW_HIDE));
+			}
+			return lResult;
+		}
+
+		static HWND _AfxChildWindowFromPoint(HWND hWnd, POINT pt)
+		{
+			ASSERT(hWnd != NULL);
+
+			// check child windows
+			::ClientToScreen(hWnd, &pt);
+			HWND hWndChild = ::GetWindow(hWnd, GW_CHILD);
+			for (; hWndChild != NULL; hWndChild = ::GetWindow(hWndChild, GW_HWNDNEXT))
+			{
+				if (_AfxGetDlgCtrlID(hWndChild) != (WORD)-1 &&
+					(::GetWindowLong(hWndChild, GWL_STYLE) & WS_VISIBLE))
+				{
+					// see if point hits the child window
+					CRect rect;
+					::GetWindowRect(hWndChild, rect);
+					if (rect.PtInRect(pt))
+						return hWndChild;
+				}
+			}
+
+			return NULL;    // not found
+		}
+
+		virtual INT_PTR OnToolHitTest(CPoint point, TOOLINFO* pTI) const
+		{
+			ASSERT_VALID(this);
+			ASSERT(::IsWindow(m_hWnd));
+
+			HWND hWndChild = _AfxChildWindowFromPoint(m_hWnd, point);
+			CWnd* pWnd = CWnd::FromHandlePermanent(hWndChild);
+			if (pWnd == NULL)
+				return CControlBar::OnToolHitTest(point, pTI);
+
+			ASSERT(pWnd->m_hWnd == hWndChild);
+			return pWnd->OnToolHitTest(point, pTI);
+		}
+
+
+		virtual void OnUpdateCmdUI(CFrameWnd* pTarget, BOOL bDisableIfNoHandler)
+		{
+			UpdateDialogControls((CCmdTarget*)pTarget, bDisableIfNoHandler);
+		}
+
+
+		// Operations
+		BOOL AddBar(CWnd* pBar, LPCTSTR pszText = NULL, CBitmap* pbmp = NULL, DWORD dwStyle = RBBS_GRIPPERALWAYS | RBBS_FIXEDBMP)
+		{
+			ENSURE_ARG(pBar != NULL);
+			REBARBANDINFO rbBand;
+			rbBand.fMask = RBBIM_STYLE;
+			rbBand.fStyle = dwStyle;
+			if (pszText != NULL)
+			{
+				rbBand.fMask |= RBBIM_TEXT;
+				rbBand.lpText = const_cast<LPTSTR>(pszText);
+			}
+			if (pbmp != NULL)
+			{
+				rbBand.fMask |= RBBIM_BACKGROUND;
+				rbBand.hbmBack = (HBITMAP)*pbmp;
+			}
+			return _AddBar(pBar, &rbBand);
+		}
+
+		BOOL AddBar(CWnd* pBar, COLORREF clrFore, COLORREF clrBack, LPCTSTR pszText = NULL, DWORD dwStyle = RBBS_GRIPPERALWAYS)
+		{
+			REBARBANDINFO rbBand;
+			rbBand.fMask = RBBIM_STYLE | RBBIM_COLORS;
+			rbBand.fStyle = dwStyle;
+			rbBand.clrFore = clrFore;
+			rbBand.clrBack = clrBack;
+			if (pszText != NULL)
+			{
+				rbBand.fMask |= RBBIM_TEXT;
+				rbBand.lpText = const_cast<LPTSTR>(pszText);
+			}
+			return _AddBar(pBar, &rbBand);
+		}
+
+		// Implementation
+		virtual CSize CalcDynamicLayout(int nLength, DWORD dwMode)
+		{
+			if (dwMode & LM_HORZDOCK)
+				ASSERT(dwMode & LM_HORZ);
+			return CalcFixedLayout(dwMode & LM_STRETCH, dwMode & LM_HORZ);
+		}
+
+		virtual CSize CalcFixedLayout(BOOL bStretch, BOOL bHorz)
+		{
+			ASSERT_VALID(this);
+			ASSERT(::IsWindow(m_hWnd));
+
+			// the union of the band rectangles is the total bounding rect
+			int nCount = int(DefWindowProc(RB_GETBANDCOUNT, 0, 0));
+			REBARBANDINFO rbBand;
+			rbBand.cbSize = m_nReBarBandInfoSize;
+			int nTemp;
+
+			// sync up hidden state of the bands
+			for (nTemp = nCount; nTemp--;)
+			{
+				rbBand.fMask = RBBIM_CHILD | RBBIM_STYLE;
+				VERIFY(DefWindowProc(RB_GETBANDINFO, nTemp, (LPARAM)&rbBand));
+				CControlBar* pBar = DYNAMIC_DOWNCAST(CControlBar, CWnd::FromHandlePermanent(rbBand.hwndChild));
+				BOOL bWindowVisible;
+				if (pBar != NULL)
+					bWindowVisible = pBar->IsVisible();
+				else
+					bWindowVisible = (::GetWindowLong(rbBand.hwndChild, GWL_STYLE) & WS_VISIBLE) != 0;
+				BOOL bBandVisible = (rbBand.fStyle & RBBS_HIDDEN) == 0;
+				if (bWindowVisible != bBandVisible)
+					VERIFY(DefWindowProc(RB_SHOWBAND, nTemp, bWindowVisible));
+			}
+
+			// determine bounding rect of all visible bands
+			CRect rectBound; rectBound.SetRectEmpty();
+			for (nTemp = nCount; nTemp--;)
+			{
+				rbBand.fMask = RBBIM_STYLE;
+				VERIFY(DefWindowProc(RB_GETBANDINFO, nTemp, (LPARAM)&rbBand));
+				if ((rbBand.fStyle & RBBS_HIDDEN) == 0)
+				{
+					CRect rect;
+					VERIFY(DefWindowProc(RB_GETRECT, nTemp, (LPARAM)&rect));
+					rectBound |= rect;
+				}
+			}
+
+			// add borders as part of bounding rect
+			if (!rectBound.IsRectEmpty())
+			{
+				CRect rect; rect.SetRectEmpty();
+				CalcInsideRect(rect, bHorz);
+				rectBound.right -= rect.Width();
+				rectBound.bottom -= rect.Height();
+			}
+
+			return CSize((bHorz && bStretch) ? 32767 : rectBound.Width(),
+				(!bHorz && bStretch) ? 32767 : rectBound.Height());
+		}
+
+		virtual BOOL Create(CWnd* pParentWnd, DWORD dwCtrlStyle = RBS_BANDBORDERS,
+			DWORD dwStyle = WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | CBRS_TOP,
+			UINT nID = AFX_IDW_REBAR)
+		{
+			ASSERT_VALID(pParentWnd);   // must have a parent
+			ASSERT(!((dwStyle & CBRS_SIZE_FIXED) && (dwStyle & CBRS_SIZE_DYNAMIC)));
+
+			// save the style
+			m_dwStyle = (dwStyle & CBRS_ALL);
+			if (nID == AFX_IDW_REBAR)
+				m_dwStyle |= CBRS_HIDE_INPLACE;
+
+			dwStyle &= ~CBRS_ALL;
+			dwStyle |= CCS_NOPARENTALIGN | CCS_NOMOVEY | CCS_NODIVIDER | CCS_NORESIZE | RBS_VARHEIGHT;
+			dwStyle |= dwCtrlStyle;
+
+			// initialize common controls
+			VERIFY(AfxDeferRegisterClass(AFX_WNDCOMMCTL_COOL_REG));
+			_AfxGetComCtlVersion();
+			//ASSERT(_afxComCtlVersion != -1);
+
+			// create the HWND
+			CRect rect; rect.SetRectEmpty();
+			if (!CWnd::Create(REBARCLASSNAME, NULL, dwStyle, rect, pParentWnd, nID))
+				return FALSE;
+
+			// Note: Parent must resize itself for control bar to be resized
+
+			return TRUE;
+		}
+
+		UINT GetReBarBandInfoSize() const { return m_nReBarBandInfoSize; }
+
+		// CReBar
+		// NOTE: The cast in GetReBarCtrl is ugly, but must be preserved for compatibility.
+		// CReBarCtrl is not related to CReBar by inheritance so we must be careful to ensure 
+		// that CReBarCtrl remains a binary compatible subset of CReBar.
+		CReBarCtrl& GetReBarCtrl() const { return *(CReBarCtrl*)this; }
+
+
+};
+
+
+BEGIN_MESSAGE_MAP(CReBar, CControlBar)
+	ON_WM_ERASEBKGND()
+	ON_WM_NCCALCSIZE()
+	ON_WM_NCCREATE()
+	ON_WM_NCPAINT()
+	ON_WM_PAINT()
+
+	ON_NOTIFY_REFLECT(RBN_ENDDRAG, &CReBar::OnHeightChange)
+	ON_NOTIFY_REFLECT(RBN_HEIGHTCHANGE, &CReBar::OnHeightChange)
+
+	ON_MESSAGE(RB_SHOWBAND, &CReBar::OnShowBand)
+	ON_MESSAGE_VOID(WM_RECALCPARENT, &CReBar::OnRecalcParent)
+END_MESSAGE_MAP()

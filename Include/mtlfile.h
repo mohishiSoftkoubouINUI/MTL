@@ -1,6 +1,6 @@
 
 
-class CDocument ;
+
 
 
 class CTime
@@ -8,8 +8,7 @@ class CTime
 	public:
 		CTime() : m_time(0) {}
 		CTime(__time64_t time) : m_time(time) {}
-		CTime(int nYear, int nMonth, int nDay,
-				int nHour, int nMin, int nSec, int nDST = -1)
+		CTime(int nYear, int nMonth, int nDay, int nHour, int nMin, int nSec, int nDST = -1)
 		{
 			ENSURE(nYear >= 1900);
 			ENSURE(nMonth >= 1 && nMonth <= 12);
@@ -46,10 +45,8 @@ class CTime
 			}
 			else
 			{
-				CTime timeT(
-					(int)sysTime.wYear, (int)sysTime.wMonth, (int)sysTime.wDay,
-					(int)sysTime.wHour, (int)sysTime.wMinute, (int)sysTime.wSecond,
-					nDST);
+				CTime timeT((int)sysTime.wYear, (int)sysTime.wMonth, (int)sysTime.wDay,
+							(int)sysTime.wHour, (int)sysTime.wMinute, (int)sysTime.wSecond, nDST);
 				*this = timeT;
 			}
 		}

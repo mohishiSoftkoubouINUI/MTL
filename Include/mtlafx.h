@@ -98,6 +98,11 @@ struct _AUX_DATA
 };
 
 
+#ifdef _UNICODE
+#define _CHAR_INC(p) ((p) + 1)
+#else
+#define _CHAR_INC(p) CharNext(p)
+#endif
 
 
 class CAfx
@@ -245,7 +250,7 @@ class CAfx
 				// First skip to the '\' between the server name and the share name,
 				while (*lpszCur != '\\')
 				{
-					lpszCur = _tcsinc(lpszCur);
+					lpszCur = _CHAR_INC(lpszCur);
 					ASSERT(*lpszCur != '\0');
 				}
 			}
@@ -254,10 +259,10 @@ class CAfx
 			// make sure there is another directory, not just c:\filename.ext
 			if (cchFullPath - cchFileName > 3)
 			{
-				lpszCur = _tcsinc(lpszCur);
+				lpszCur = _CHAR_INC(lpszCur);
 				while (*lpszCur != '\\')
 				{
-					lpszCur = _tcsinc(lpszCur);
+					lpszCur = _CHAR_INC(lpszCur);
 					ASSERT(*lpszCur != '\0');
 				}
 			}
@@ -281,7 +286,7 @@ class CAfx
 			{
 				do
 				{
-					lpszCur = _tcsinc(lpszCur);
+					lpszCur = _CHAR_INC(lpszCur);
 					ASSERT(*lpszCur != '\0');
 				} while (*lpszCur != '\\');
 			}
@@ -338,7 +343,7 @@ class CAfx
 
 			// for every C3_FULLWIDTH character, make sure it has same C1 value
 			int i = 0;
-			for (LPCTSTR lpsz = lpszPath1; *lpsz != 0; lpsz = _tcsinc(lpsz))
+			for (LPCTSTR lpsz = lpszPath1; *lpsz != 0; lpsz = _CHAR_INC(lpsz))
 			{
 				// check for C3_FULLWIDTH characters only
 				if (aCharType13[i] & C3_FULLWIDTH)
@@ -840,6 +845,68 @@ class CAfx
 			return lResult;
 		}
 
+		// Common Control Versions:
+		//   WinNT 4.0          maj=4 min=00
+		//   IE 3.x             maj=4 min=70
+		//   IE 4.0             maj=4 min=71
+		//   IE 5.0             maj=5 min=80
+		//   Win2000            maj=5 min=81
+		static HRESULT GetCommCtrlVersion(LPDWORD pdwMajor, LPDWORD pdwMinor)
+		{
+			*pdwMajor = 0;
+			*pdwMinor = 0;
+
+			HINSTANCE hInstDLL = ::LoadLibraryW(L"comctl32.dll");
+			if (hInstDLL == NULL)
+			{
+				*pdwMajor = 4;
+				*pdwMinor = 0;
+				return 0;
+				//return AtlHresultFromLastError();
+			}
+
+			// We must get this function explicitly because some DLLs don't implement it.
+			DLLGETVERSIONPROC pfnDllGetVersion = (DLLGETVERSIONPROC)::GetProcAddress(hInstDLL, "DllGetVersion");
+			HRESULT hRet;
+
+			if (pfnDllGetVersion != NULL)
+			{
+				DLLVERSIONINFO dvi;
+				memset(&dvi, 0, sizeof(dvi));
+				dvi.cbSize = sizeof(dvi);
+
+				hRet = (*pfnDllGetVersion)(&dvi);
+				if (SUCCEEDED(hRet))
+				{
+					*pdwMajor = dvi.dwMajorVersion;
+					*pdwMinor = dvi.dwMinorVersion;
+				}
+			}
+			else
+			{
+				hRet = E_NOTIMPL;
+			}
+
+			::FreeLibrary(hInstDLL);
+			return hRet;
+		}
+
+		static DWORD _AfxGetComCtlVersion()
+		{
+			static int _afxComCtlVersion = -1;
+
+			if (_afxComCtlVersion == -1)
+			{
+				DWORD dwMajor = 0, dwMinor = 0;
+				GetCommCtrlVersion(&dwMajor, &dwMinor);
+
+				_afxComCtlVersion = MAKELONG(dwMinor, dwMajor);
+			}
+
+			return _afxComCtlVersion;
+		}
+
+
 		static const ATLSTRINGRESOURCEIMAGE* _AtlGetStringResourceImage(HINSTANCE hInstance, HRSRC hResource, UINT id) throw()
 		{
 			HGLOBAL hGlobal = ::LoadResource(hInstance, hResource);
@@ -1077,7 +1144,7 @@ class CAfx
 		static void AfxSetWindowText(HWND hWndCtrl, LPCTSTR lpszNew)
 		{
 			size_t nNewLen = lstrlen(lpszNew);
-			TCHAR szOld[256] = _T("");
+			TCHAR szOld[256] = { _T('\0') }; // _T("");
 			// fast check to see if text really changes (reduces flash in controls)
 			if (nNewLen > _countof(szOld) ||
 				::GetWindowText(hWndCtrl, szOld, _countof(szOld)) != (int)(nNewLen) ||
@@ -1096,7 +1163,7 @@ class CAfx
 			CString className = Tokenize(pModuleState->m_strUnregisterList, _T("\n"), start);
 			while (!className.IsEmpty())
 			{
-				UnregisterClass(static_cast<LPCTSTR>(className), AfxGetInstanceHandle());
+				UnregisterClass((LPCTSTR)(className), AfxGetInstanceHandle());
 				className = Tokenize(pModuleState->m_strUnregisterList, _T("\n"), start);
 			}
 			pModuleState->m_strUnregisterList.Empty();
@@ -1271,7 +1338,7 @@ class CAfx
 #define AfxDeferRegisterClass(fClass) AfxEndDeferRegisterClass(fClass)
 
 #define DYNAMIC_DOWNCAST(class_name, object) \
-	(class_name*)CAfx::AfxDynamicDownCast(RUNTIME_CLASS(class_name), object)
+			(class_name*)CAfx::AfxDynamicDownCast(RUNTIME_CLASS(class_name), object)
 
 #define STATIC_DOWNCAST(class_name, object) (class_name*)(object)
 
@@ -1288,6 +1355,7 @@ _INLINE void AfxFormatStrings(CString& rString, UINT nIDS, LPCTSTR const* rglpsz
 _INLINE void AfxFormatString1(CString& rString, UINT nIDS, LPCTSTR lpsz1) { CAfx::AfxFormatStrings(rString, nIDS, &lpsz1, 1); }
 _INLINE BOOL _AfxFullPath2(LPTSTR lpszPathOut, LPCTSTR lpszFileIn, CFileException* pException = NULL) { return CAfx::_AfxFullPath2(lpszPathOut, lpszFileIn, pException); }
 _INLINE BOOL AfxFullPath(LPTSTR lpszPathOut, LPCTSTR lpszFileIn) { return CAfx::_AfxFullPath2(lpszPathOut, lpszFileIn); }
+_INLINE DWORD _AfxGetComCtlVersion() { return CAfx::_AfxGetComCtlVersion() ; }
 _INLINE UINT AfxGetFileName(LPCTSTR lpszPathName, LPTSTR lpszTitle, UINT nMax) { return CAfx::AfxGetFileName(lpszPathName, lpszTitle, nMax); }
 _INLINE UINT AfxGetFileTitle(LPCTSTR lpszPathName, LPTSTR lpszTitle, UINT nMax) { return CAfx::AfxGetFileTitle(lpszPathName, lpszTitle, nMax); }
 _INLINE void AfxGetRoot(LPCTSTR lpszPath, CString& strRoot) { CAfx::AfxGetRoot(lpszPath, strRoot); }
@@ -1314,7 +1382,6 @@ _INLINE CString Tokenize(CString& rString, LPTSTR pszTokens, int& iStart) { retu
 _INLINE int _wcstombsz(char* mbstr, const wchar_t* wcstr, ULONG count) { return CAfx::_wcstombsz(mbstr, wcstr, count) ; }
 
 
-
 /*============================================================================*/
 // Standard exception throws
 
@@ -1334,9 +1401,9 @@ class CStringW : public CString
 	public:
 		CStringW() : CString() {}
 
-#ifdef UNICODE
+#ifdef _UNICODE
 		CStringW(LPCSTR lpsz) : CString(lpsz) {}
-#else UNICODE
+#else // _UNICODE
 		CStringW(LPCSTR lpsz)
 		{
 			Init();
@@ -1353,7 +1420,7 @@ class CStringW : public CString
 			}
 		}
 
-#endif
+#endif // _UNICODE
 		CStringW(LPCWSTR lpsz) : CString(lpsz) {}
 
 
@@ -1374,7 +1441,7 @@ class CStringW : public CString
 		}
 
 		int GetLength() const { return CString::GetLength() / sizeof(WCHAR); }   // as an array of characters
-#endif
+#endif // _UNICODE
 		LPWSTR GetBuffer() { return (LPWSTR)CString::GetBuffer(0) ; }
 		LPCWSTR GetString() { return (LPCWSTR)m_pchData; }
 
@@ -1545,12 +1612,8 @@ struct CCreateContext   // Creation information structure
 
 
 
-
-
 class CRecentFileList
 {
-	public:
-
 	public:
 		CRecentFileList(UINT nStart, LPCTSTR lpszSection, LPCTSTR lpszEntryFormat, int nSize, int nMaxDispLen = AFX_ABBREV_FILENAME_LEN)
 		{
@@ -1754,6 +1817,8 @@ class AFX_COM
 
 
 #ifndef _MTL_ATL3
+
+// not supported
 
 class CSettingsStore
 {

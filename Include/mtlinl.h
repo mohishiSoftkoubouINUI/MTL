@@ -80,6 +80,11 @@ class CImageList ;
 #endif
 
 
+class CDialogBar;
+class CReBar;
+class CStatusBar;
+class CToolBar;
+
 
 class CFrameWnd ;
 class CSplitterWnd ;

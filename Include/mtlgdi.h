@@ -2386,6 +2386,12 @@ class CImageListMTL : public CHandleWrapper<CImageListMTL, HIMAGELIST, CImageLis
 	public:
 		IMPLEMENT_HANDLE_CREATE(CImageListMTL, HIMAGELIST)
 
+	public:
+		BOOL Copy(int iDst, CImageListMTL* pSrc, int iSrc, UINT uFlags = ILCF_MOVE)
+		{
+			ASSERT(m_hImageList != NULL); ASSERT(pSrc != NULL && (HIMAGELIST)*pSrc != NULL); return ImageList_Copy(m_hImageList, iDst, *pSrc, iSrc, uFlags);
+		}
+
 };
 
 

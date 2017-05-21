@@ -1,6 +1,6 @@
 
 /*
-	MTL (MFC on ATL/WTL)  Version 1.0.0.1
+	MTL (MFC on ATL/WTL)  Version 1.0.1.2
 		MFC interface with header files only 
 
 	Required :	Microsoft Visual C++ MFC
@@ -132,6 +132,9 @@ extern CComModule _AtlWinModule;
 #ifdef ID_EDIT_FIND_PREVIOUS
 #undef ID_EDIT_FIND_PREVIOUS
 #endif
+#ifdef ID_VIEW_REFRESH
+#undef ID_VIEW_REFRESH
+#endif
 #include <atldlgs.h>
 #include <atlctrls.h>
 #ifdef _WTL_TYPES
@@ -180,6 +183,8 @@ class CAtlTransactionManager ;
 
 #define PSH_AEROWIZARD                  0x00004000
 
+#define RBBS_USECHEVRON                 0x00000200  // display drop-down button for this band if it's sized smaller than ideal width
+
 #define TVM_SETEXTENDEDSTYLE            (TV_FIRST + 44)
 #define TVM_GETEXTENDEDSTYLE            (TV_FIRST + 45)
 
@@ -194,7 +199,6 @@ class CAtlTransactionManager ;
 
 typedef LONG LSTATUS;
 typedef MSG _ATL_MSG ;
-typedef time_t __time64_t ;
 typedef time_t __time64_t ;
 
 #pragma warning(disable : 4200)
@@ -290,6 +294,8 @@ class CBasePane : public CToolBar
 {
 	public:
 
+	public:
+
 		DWORD m_dwStyle ;
 
 	public:
@@ -307,6 +313,7 @@ class CBasePane : public CToolBar
 
 class CMFCToolBar : public CBasePane
 {
+	public:
 
 	public:
 		virtual BOOL Create(CWnd* pParentWnd, DWORD dwStyle = AFX_DEFAULT_TOOLBAR_STYLE, UINT nID = AFX_IDW_TOOLBAR)

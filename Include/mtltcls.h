@@ -525,6 +525,16 @@ class CMapList : public CList<TPAIR>
 	public:
 		typedef CList<CTypePair>::CNode CMapNode;
 
+		void GetNextAssoc(POSITION& pos, TKEY key, TYPE value) const
+		{
+			key = ((CMapNode*)pos)->data.key ;
+			value = ((CMapNode*)pos)->data.value;
+
+			GetNext(pos);
+		}
+
+		POSITION GetStartPosition() const { return GetHeadPosition(); }
+
 		POSITION Find(const TKEY key) const
 		{
 			POSITION pos = GetHeadPosition();
@@ -1310,19 +1320,15 @@ class CTypedPtrList : public BASE_CLASS
 
 
 
+typedef CArray<BYTE> CByteArray;
+typedef CArray<CString> CStringArray;
 typedef CArray<void*> CPtrArray;
+
 typedef CList<void*, void*> CPtrList;
+typedef CList<CObject*> CObList;
 
-
-class CObList : public CList<CObject*>
-{
-};
-
-
-class CMapPtrToPtr : public CMapList<void*, void*>
-{
-};
-
+typedef CMapList<LPCTSTR, void*> CMapStringToPtr;
+typedef CMapList<void*, void*> CMapPtrToPtr ;
 
 
 

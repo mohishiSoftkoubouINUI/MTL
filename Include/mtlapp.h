@@ -18,6 +18,7 @@
 #include "mtlbar.h"
 #include "mtlbardk.h"
 #include "mtlfrm.h"
+#include "mtlfrmd.h"
 #include "mtlcdlgs.h"
 
 #include "mtlview.h"

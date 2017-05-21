@@ -241,7 +241,6 @@ BEGIN_MESSAGE_MAP(CDockBar, CControlBar)
 	ON_WM_NCCALCSIZE()
 	ON_WM_NCPAINT()
 	ON_WM_WINDOWPOSCHANGING()
-
 	ON_MESSAGE(WM_SIZEPARENT, &CDockBar::OnSizeParent)
 END_MESSAGE_MAP()
 
@@ -294,21 +293,34 @@ struct AFX_COLORMAP
 	// use DWORD instead of RGBQUAD so we can compare two RGBQUADs easily
 	DWORD rgbqFrom;
 	INT iSysColorTo;
+
+	AFX_COLORMAP(DWORD rgb, INT color)
+	{
+		rgbqFrom = rgb;
+		iSysColorTo = color ;
+	}
 };
+
+_INLINE const AFX_COLORMAP _afxSysColorMap(INT i)
+{
+	switch (i)
+	{
+		case 1 :
+			return AFX_COLORMAP(AFX_RGB_TO_RGBQUAD(0x80, 0x80, 0x80), COLOR_BTNSHADOW ) ;     // dark gray
+		case 2:
+			return AFX_COLORMAP(AFX_RGB_TO_RGBQUAD(0xC0, 0xC0, 0xC0), COLOR_BTNFACE ) ;       // bright gray
+		case 3:
+			return AFX_COLORMAP(AFX_RGB_TO_RGBQUAD(0xFF, 0xFF, 0xFF), COLOR_BTNHIGHLIGHT ) ;   // white
+	}
+
+	return AFX_COLORMAP(AFX_RGB_TO_RGBQUAD(0x00, 0x00, 0x00), COLOR_BTNTEXT ) ;       // black
+}
+
+#define AFX_COLORMAP_COUNT (4)
 
 
 _INLINE HBITMAP AfxLoadSysColorBitmap(HINSTANCE hInst, HRSRC hRsrc, BOOL bMono = FALSE)
 {
-	static const AFX_COLORMAP _afxSysColorMap[] =
-	{
-		// mapping from color in DIB to system color
-		{ AFX_RGB_TO_RGBQUAD(0x00, 0x00, 0x00), COLOR_BTNTEXT },       // black
-		{ AFX_RGB_TO_RGBQUAD(0x80, 0x80, 0x80), COLOR_BTNSHADOW },     // dark gray
-		{ AFX_RGB_TO_RGBQUAD(0xC0, 0xC0, 0xC0), COLOR_BTNFACE },       // bright gray
-		{ AFX_RGB_TO_RGBQUAD(0xFF, 0xFF, 0xFF), COLOR_BTNHIGHLIGHT }   // white
-	};
-
-
 	HGLOBAL hglb;
 	if ((hglb = LoadResource(hInst, hRsrc)) == NULL)
 	{
@@ -338,18 +350,20 @@ _INLINE HBITMAP AfxLoadSysColorBitmap(HINSTANCE hInst, HRSRC hRsrc, BOOL bMono =
 	for (int iColor = 0; iColor < nColorTableSize; iColor++)
 	{
 		// look for matching RGBQUAD color in original
-		for (int i = 0; i < _countof(_afxSysColorMap); i++)
+		for (int i = 0; i < AFX_COLORMAP_COUNT ; i++)
 		{
-			if (pColorTable[iColor] == _afxSysColorMap[i].rgbqFrom)
+			AFX_COLORMAP colorMap = _afxSysColorMap(i) ;
+
+			if (pColorTable[iColor] == colorMap.rgbqFrom)
 			{
 				if (bMono)
 				{
 					// all colors except text become white
-					if (_afxSysColorMap[i].iSysColorTo != COLOR_BTNTEXT)
+					if (colorMap.iSysColorTo != COLOR_BTNTEXT)
 						pColorTable[iColor] = AFX_RGB_TO_RGBQUAD(255, 255, 255);
 				}
 				else
-					pColorTable[iColor] = AFX_CLR_TO_RGBQUAD(::GetSysColor(_afxSysColorMap[i].iSysColorTo));
+					pColorTable[iColor] = AFX_CLR_TO_RGBQUAD(::GetSysColor(colorMap.iSysColorTo));
 				break;
 			}
 		}
@@ -365,7 +379,8 @@ _INLINE HBITMAP AfxLoadSysColorBitmap(HINSTANCE hInst, HRSRC hRsrc, BOOL bMono =
 		HDC hDCGlyphs = ::CreateCompatibleDC(hDCScreen);
 		HBITMAP hbmOld = (HBITMAP)::SelectObject(hDCGlyphs, hbm);
 
-		LPBYTE lpBits = (LPBYTE)(lpBitmap + 1);
+		LPBYTE lpBits;
+		lpBits = (LPBYTE)(lpBitmap + 1);
 		lpBits += ((size_t)1 << (lpBitmapInfo->biBitCount)) * sizeof(RGBQUAD);
 
 		StretchDIBits(hDCGlyphs, 0, 0, nWidth, nHeight, 0, 0, nWidth, nHeight,
@@ -431,8 +446,6 @@ class CToolBar : public CControlBar
 			// top and bottom borders are 1 larger than default for ease of grabbing
 			m_cyTopBorder = 3;
 			m_cyBottomBorder = 3;
-
-			m_pStringMap = NULL ;
 		}
 
 	public:
@@ -448,7 +461,6 @@ class CToolBar : public CControlBar
 		CSize m_sizeImage;  // current image size
 		CSize m_sizeButton; // current button size
 
-		CMapStringToPtr* m_pStringMap;  // used as CMapStringToUInt
 
 	public:
 		void OnBarStyleChange(DWORD dwOldStyle, DWORD dwNewStyle)
@@ -483,109 +495,6 @@ class CToolBar : public CControlBar
 				Layout();
 
 			Default();
-		}
-
-		LRESULT OnPreserveSizingPolicyHelper(WPARAM, LPARAM)
-		{
-			//	NOTE: in comctl32 version 6.00 when using XP Look combined with TBSTYLE_EX_DRAWDDARROWS 
-			//	style minimal sizing policy was changed to be
-			//			button.height >= image.height + 13
-			//			button.width >= image.width + 16
-			//	this force buttons to be bigger then usual
-			//	To override this behavior we should remove TBSTYLE_DROPDOWN from all buttons prior to setimagelist 
-			//  operations
-
-			UINT uiButtonNum = GetToolBarCtrl().GetButtonCount();
-			DWORD* pdwStyles = new DWORD[uiButtonNum];
-			ASSERT(pdwStyles);
-			for (UINT i = 0; i < uiButtonNum; i++)
-			{
-				pdwStyles[i] = GetButtonStyle(i);
-				SetButtonStyle(i, pdwStyles[i] & ~TBSTYLE_DROPDOWN);
-			}
-
-			LRESULT lResult = Default();
-
-			if (pdwStyles)
-			{
-				for (UINT i = 0; i< uiButtonNum; i++)
-				{
-					SetButtonStyle(i, pdwStyles[i]);
-				}
-				delete[] pdwStyles;
-			}
-
-			return lResult;
-		}
-
-		LRESULT OnPreserveZeroBorderHelper(WPARAM, LPARAM)
-		{
-			DWORD dwStyle = GetStyle();
-			BOOL bModify = ModifyStyle(0, TBSTYLE_TRANSPARENT | TBSTYLE_FLAT);
-			DWORD dwStyleEx = GetToolBarCtrl().SetExtendedStyle(GetToolBarCtrl().GetExtendedStyle() &~TBSTYLE_EX_DRAWDDARROWS);
-
-			LRESULT lResult = Default();
-
-			if (bModify)
-			{
-				::SetWindowLong(m_hWnd, GWL_STYLE, dwStyle);
-			}
-			if (dwStyleEx & TBSTYLE_EX_DRAWDDARROWS)
-			{
-				GetToolBarCtrl().SetExtendedStyle(dwStyleEx);
-			}
-
-			return lResult;
-		}
-
-		LRESULT OnSetButtonSize(WPARAM, LPARAM lParam)
-		{
-			return OnSetSizeHelper(m_sizeButton, lParam);
-		}
-
-		LRESULT OnSetBitmapSize(WPARAM, LPARAM lParam)
-		{
-			return OnSetSizeHelper(m_sizeImage, lParam);
-		}
-
-		LRESULT OnSetSizeHelper(CSize& size, LPARAM lParam)
-		{
-			//  The IE4 version of COMCTL32.DLL supports a zero border, but 
-			//	only if TBSTYLE_TRANSPARENT is on during the the TB_SETBITMAPSIZE
-			//	and/or TB_SETBUTTONSIZE messages.  In order to enable this feature
-			//	all the time (so we get consistent border behavior, dependent only
-			//	on the version of COMCTL32.DLL) we turn on TBSTYLE_TRANSPARENT 
-			//	whenever these messages go through.  It would be nice that in a
-			//	future version, the system toolbar would just allow you to set
-			//	the top and left borders to anything you please.
-
-			//  In comctl32 version 6.00 when using XP Look combined with TBSTYLE_EX_DRAWDDARROWS 
-			//	style minimal sizing policy was changed to be
-			//			button.height >= image.height + 13
-			//			button.width >= image.width + 16
-			//	this force buttons to be bigger then usual
-			//	To override this behavior we should remove TBSTYLE_EX_DRAWDDARROWS prior to sizing operations
-
-			DWORD dwStyle = GetStyle();
-			BOOL bModify = ModifyStyle(0, TBSTYLE_TRANSPARENT | TBSTYLE_FLAT);
-			DWORD dwStyleEx = GetToolBarCtrl().SetExtendedStyle(GetToolBarCtrl().GetExtendedStyle() &~TBSTYLE_EX_DRAWDDARROWS);
-
-			LRESULT lResult = Default();
-			if (lResult)
-			{
-				size = DWORD(lParam);
-			}
-
-			if (bModify)
-			{
-				::SetWindowLong(m_hWnd, GWL_STYLE, dwStyle);
-			}
-			if (dwStyleEx)
-			{
-				GetToolBarCtrl().SetExtendedStyle(dwStyleEx);
-			}
-
-			return lResult;
 		}
 
 		INT_PTR OnToolHitTest(CPoint point, TOOLINFO* pTI) const
@@ -1067,37 +976,6 @@ class CToolBar : public CControlBar
 			return MAKELONG(button.fsStyle, button.fsState);
 		}
 
-		CString CToolBar::GetButtonText(int nIndex) const
-		{
-			CString strResult;
-			GetButtonText(nIndex, strResult);
-			return strResult;
-		}
-
-		void CToolBar::GetButtonText(int nIndex, CString& rString) const
-		{
-			if (m_pStringMap != NULL)
-			{
-				// get button information (need button.iString)
-				TBBUTTON button;
-				_GetButton(nIndex, &button);
-
-				// look in map for matching iString
-				POSITION pos = m_pStringMap->GetStartPosition();
-				CString str; void* p;
-				while (pos)
-				{
-					m_pStringMap->GetNextAssoc(pos, str, p);
-					if ((INT_PTR)p == button.iString)
-					{
-						rString = str;
-						return;
-					}
-				}
-			}
-			rString.Empty();
-		}
-
 		// NOTE: The cast in GetToolBarCtrl is ugly, but must be preserved for compatibility.
 		// CToolBarCtrl is not related to CToolBar by inheritance so we must be careful to ensure 
 		// that CToolBarCtrl remains a binary compatible subset of CToolBar.
@@ -1306,41 +1184,6 @@ class CToolBar : public CControlBar
 			}
 		}
 
-		BOOL SetButtonText(int nIndex, LPCTSTR lpszText)
-		{
-			// attempt to lookup string index in map
-			INT_PTR nString = -1;
-			void* p;
-			if (m_pStringMap != NULL && m_pStringMap->Lookup(lpszText, p))
-				nString = (INT_PTR)p;
-
-			// add new string if not already in map
-			if (nString == -1)
-			{
-				// initialize map if necessary
-				if (m_pStringMap == NULL)
-					m_pStringMap = new CMapStringToPtr;
-
-				// add new string to toolbar list
-				CString strTemp(lpszText, lstrlen(lpszText) + 1);
-				nString = (INT_PTR)DefWindowProc(TB_ADDSTRING, 0, (LPARAM)(LPCTSTR)strTemp);
-				if (nString == -1)
-					return FALSE;
-
-				// cache string away in string map
-				m_pStringMap->SetAt(lpszText, (void*)nString);
-				ASSERT(m_pStringMap->Lookup(lpszText, p));
-			}
-
-			// change the toolbar button description
-			TBBUTTON button;
-			_GetButton(nIndex, &button);
-			button.iString = nString - STRING_REFRESH_OFFSET;
-			_SetButton(nIndex, &button);
-
-			return TRUE;
-		}
-
 		void SetSizes(SIZE sizeButton, SIZE sizeImage)
 		{
 			ASSERT_VALID(this);
@@ -1376,19 +1219,21 @@ class CToolBar : public CControlBar
 
 			if (!bVert)
 			{
+				int nMin, nMax, nTarget, nCurrent, nMid;
+
 				// Wrap ToolBar as specified
-				int nMax = nLength;
-				int nTarget = WrapToolBar(pData, nCount, nMax);
+				nMax = nLength;
+				nTarget = WrapToolBar(pData, nCount, nMax);
 
 				// Wrap ToolBar vertically
-				int nMin = 0;
-				int nCurrent = WrapToolBar(pData, nCount, nMin);
+				nMin = 0;
+				nCurrent = WrapToolBar(pData, nCount, nMin);
 
 				if (nCurrent != nTarget)
 				{
 					while (nMin < nMax)
 					{
-						int nMid = (nMin + nMax) / 2;
+						nMid = (nMin + nMax) / 2;
 						nCurrent = WrapToolBar(pData, nCount, nMid);
 
 						if (nCurrent == nTarget)
@@ -1524,14 +1369,6 @@ BEGIN_MESSAGE_MAP(CToolBar, CControlBar)
 	ON_WM_NCPAINT()
 	ON_WM_PAINT()
 	ON_WM_WINDOWPOSCHANGING()
-
-	ON_MESSAGE(TB_SETBITMAPSIZE, &CToolBar::OnSetBitmapSize)
-	ON_MESSAGE(TB_SETBUTTONSIZE, &CToolBar::OnSetButtonSize)
-	ON_MESSAGE(TB_SETDISABLEDIMAGELIST, &CToolBar::OnPreserveSizingPolicyHelper)
-	ON_MESSAGE(WM_SETFONT, &CToolBar::OnPreserveZeroBorderHelper)
-	ON_MESSAGE(TB_SETHOTIMAGELIST, &CToolBar::OnPreserveSizingPolicyHelper)
-	ON_MESSAGE(TB_SETIMAGELIST, &CToolBar::OnPreserveSizingPolicyHelper)
-	ON_MESSAGE(WM_SETTINGCHANGE, &CToolBar::OnPreserveZeroBorderHelper)
 END_MESSAGE_MAP()
 
 _INLINE void CControlBar::DrawBorders(CDC* pDC, CRect& rect)
