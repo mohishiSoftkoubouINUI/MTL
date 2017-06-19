@@ -47,9 +47,14 @@ class CFrameWnd : public CWnd
 			AddFrameWnd() ;
 		}
 
-		virtual ~CFrameWnd()
+		void CFrameWndDestruct()
 		{
 			RemoveFrameWnd();
+		}
+
+		virtual ~CFrameWnd()
+		{
+			_VOLATILE_CLASS_FUNC_V_V(CFrameWnd, CFrameWndDestruct)
 		}
 
 
@@ -1007,7 +1012,7 @@ class CFrameWnd : public CWnd
 				RepositionBars(0, 0xffff, AFX_IDW_PANE_FIRST, reposExtra, &m_rectBorder, &rect, TRUE);
 				CalcWindowRect(&rect);
 				SetWindowPos(NULL, 0, 0, rect.Width(), rect.Height(),
-					SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOZORDER);
+							SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOZORDER);
 			}
 			else
 				RepositionBars(0, 0xffff, AFX_IDW_PANE_FIRST, reposExtra, &m_rectBorder);
@@ -1307,8 +1312,6 @@ BEGIN_MESSAGE_MAP(CFrameWnd, CWnd)
 	ON_UPDATE_COMMAND_UI(ID_INDICATOR_KANA, &CFrameWnd::OnUpdateKeyIndicator)
 #endif	// MTL_REMOVE_CFRAMEWND_INDICATOR
 END_MESSAGE_MAP()
-
-
 
 
 

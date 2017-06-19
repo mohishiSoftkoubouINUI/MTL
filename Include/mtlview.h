@@ -10,7 +10,12 @@ class CView : public CWnd
 			m_pDocument = NULL;
 		}
 
-		virtual ~CView();
+		void CViewDestruct() ;
+
+		virtual ~CView()
+		{
+			_VOLATILE_CLASS_FUNC_V_V(CView, CViewDestruct)
+		}
 
 	public:
 		DECLARE_MESSAGE_MAP()
@@ -819,7 +824,7 @@ class CScrollView : public CView
 
 			BOOL bResult = FALSE;
 			UINT uWheelScrollLines = _AfxGetMouseScrollLines();
-			int nToScroll = ::MulDiv(-zDelta, uWheelScrollLines, WHEEL_DELTA);
+			int nToScroll = MulDiv(-zDelta, uWheelScrollLines, WHEEL_DELTA);
 			int nDisplacement;
 
 			if (bHasVertBar)
@@ -1264,6 +1269,7 @@ BEGIN_MESSAGE_MAP(CScrollView, CView)
 	ON_MESSAGE(WM_MBUTTONDOWN, &CScrollView::HandleMButtonDown)
 #endif
 END_MESSAGE_MAP()
+
 
 
 _INLINE BOOL _AFX_MOUSEANCHORWND::Create(CScrollView* pParent)

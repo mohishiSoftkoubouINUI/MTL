@@ -105,6 +105,83 @@ struct _AUX_DATA
 #endif
 
 
+class CStringW : public CString
+{
+	public:
+		CStringW() : CString() {}
+
+#ifdef _UNICODE
+		CStringW(LPCSTR lpsz) : CString(lpsz) {}
+#else // _UNICODE
+		CStringW(LPCSTR lpsz)
+		{
+			Init();
+			int nSrcLen = (lpsz != NULL) ? lstrlenA(lpsz) : 0;
+			if (nSrcLen != 0)
+			{
+				int nDstlen = nSrcLen * sizeof(WCHAR);
+
+				if (AllocBuffer(nDstlen + 1))
+				{
+					_mbstowcsz((wchar_t*)m_pchData, lpsz, nSrcLen + 1);
+					ReleaseBuffer(nDstlen);
+				}
+			}
+		}
+
+#endif // _UNICODE
+		CStringW(LPCWSTR lpsz) : CString(lpsz) {}
+
+
+	public:
+#ifndef _UNICODE
+		CString& operator = (LPCSTR lpsz)
+		{
+			int nSrcLen = (lpsz != NULL) ? lstrlenA(lpsz) : 0;
+
+			int nDstlen = nSrcLen * sizeof(WCHAR);
+
+			if (AllocBeforeWrite(nDstlen + 1))
+			{
+				_mbstowcsz((wchar_t*)m_pchData, lpsz, nSrcLen + 1);
+				ReleaseBuffer(nDstlen);
+			}
+			return *this;
+		}
+
+		int GetLength() const { return CString::GetLength() / sizeof(WCHAR); }   // as an array of characters
+#endif // _UNICODE
+		LPWSTR GetBuffer() { return (LPWSTR)CString::GetBuffer(0); }
+		LPCWSTR GetString() const { return (LPCWSTR)m_pchData; }
+
+		// OLE BSTR support (use for OLE automation)
+		BSTR AllocSysString() const
+		{
+			BSTR bstr = ::SysAllocStringLen((const OLECHAR*)m_pchData, GetData()->nDataLength);
+
+			return bstr;
+		}
+
+
+};
+
+#ifdef _MTL_ATL3
+
+template <class T>
+class CAtlModuleT : public _ATL_MODULE // CComModule
+{
+	public:
+	public:
+	public:
+} ;
+
+#endif //  _MTL_ATL3
+
+class CAfxModule : public CAtlModuleT<CAfxModule>
+{
+};
+
+
 class CAfx
 {
 	public:
@@ -117,6 +194,8 @@ class CAfx
 		static void Term()
 		{
 			HalftoneBrush(TRUE) ;
+
+			AfxModule(TRUE) ;
 
 			//AfxUnregisterWndClasses() ;
 		}
@@ -1173,6 +1252,22 @@ class CAfx
 
 
 
+		static HRESULT AfxGetClassIDFromString(LPCTSTR lpsz, LPCLSID lpClsID)
+		{
+			HRESULT hr;
+			const CStringW strClsID(lpsz);
+			if (lpsz[0] == '{')
+			{
+				hr = CLSIDFromString((LPOLESTR)(strClsID.GetString()), lpClsID);
+			}
+			else
+			{
+				hr = CLSIDFromProgID(strClsID.GetString(), lpClsID);
+			}
+			return hr;
+
+		}
+
 		static CString AfxStringFromCLSID(REFCLSID rclsid)
 		{
 			TCHAR szCLSID[256];
@@ -1324,14 +1419,44 @@ class CAfx
 			return NULL;
 		}
 
-		static const struct _AUX_DATA& GetAfxData()
+		static const struct _AUX_DATA& _GetAfxData()
 		{
 			static struct _AUX_DATA _afxdata;
 
 			return _afxdata;
 		}
 
+		static const struct _AUX_DATA& GetAfxData()
+		{
+			//return _GetAfxData();
+			_VOLATILE_STATIC_FUNC_T_V(const struct _AUX_DATA&, _GetAfxData)
+		}
 
+		// com
+		static CAfxModule* AfxModule(BOOL bDelete = FALSE)
+		{
+#ifndef _MTL_ATL3
+			static CAfxModule *pCAfxModule = NULL;
+		
+			if (bDelete == FALSE)
+			{
+				if (pCAfxModule == NULL)
+					pCAfxModule = new CAfxModule();
+
+				return pCAfxModule;
+			}
+
+			if (pCAfxModule != NULL)
+			{
+				delete pCAfxModule;
+				pCAfxModule = NULL;
+			}
+
+			return NULL;
+#else // _MTL_ATL3
+			return (CAfxModule*)&_AtlWinModule ;
+#endif // _MTL_ATL3
+		}
 
 };
 
@@ -1372,7 +1497,8 @@ _INLINE void AfxRepositionWindow(AFX_SIZEPARENTPARAMS* lpLayout, HWND hWnd, LPCR
 _INLINE void AfxSetWindowText(HWND hWndCtrl, LPCTSTR lpszNew) { CAfx::AfxSetWindowText(hWndCtrl, lpszNew); }
 
 
-_INLINE CString AfxStringFromCLSID(REFCLSID rclsid) { return CAfx::AfxStringFromCLSID(rclsid) ; }
+_INLINE HRESULT AfxGetClassIDFromString(LPCTSTR lpsz, LPCLSID lpClsID) { return CAfx::AfxGetClassIDFromString(lpsz, lpClsID); }
+_INLINE CString AfxStringFromCLSID(REFCLSID rclsid) { return CAfx::AfxStringFromCLSID(rclsid); }
 _INLINE BOOL AfxGetInProcServer(LPCTSTR lpszCLSID, CString& str) { return CAfx::AfxGetInProcServer(lpszCLSID, str); }
 
 #ifdef _WTL_TYPES
@@ -1392,61 +1518,13 @@ _INLINE void AfxThrowResourceException() { THROW(&CAfx::GetCException(AFX_IDS_RE
 
 //_INLINE void AfxThrowArchiveException(int cause, LPCTSTR lpszArchiveName = NULL);
 //_INLINE void AfxThrowFileException(int cause, LONG lOsError = -1, LPCTSTR lpszFileName = NULL);
-//void AfxThrowOleException(LONG sc);
-
-
-
-class CStringW : public CString
+_INLINE void AfxThrowOleException(SCODE sc)
 {
-	public:
-		CStringW() : CString() {}
+	COleException* pException = new COleException;
+	pException->m_sc = sc;
+	THROW(pException);
+}
 
-#ifdef _UNICODE
-		CStringW(LPCSTR lpsz) : CString(lpsz) {}
-#else // _UNICODE
-		CStringW(LPCSTR lpsz)
-		{
-			Init();
-			int nSrcLen = (lpsz != NULL) ? lstrlenA(lpsz) : 0;
-			if (nSrcLen != 0)
-			{
-				int nDstlen = nSrcLen * sizeof(WCHAR) ;
-
-				if (AllocBuffer(nDstlen + 1))
-				{
-					_mbstowcsz((wchar_t*)m_pchData, lpsz, nSrcLen + 1);
-					ReleaseBuffer(nDstlen);
-				}
-			}
-		}
-
-#endif // _UNICODE
-		CStringW(LPCWSTR lpsz) : CString(lpsz) {}
-
-
-	public:
-#ifndef _UNICODE
-		CString& operator = (LPCSTR lpsz)
-		{
-			int nSrcLen = (lpsz != NULL) ? lstrlenA(lpsz) : 0;
-
-			int nDstlen = nSrcLen * sizeof(WCHAR);
-
-			if (AllocBeforeWrite(nDstlen + 1))
-			{
-				_mbstowcsz((wchar_t*)m_pchData, lpsz, nSrcLen + 1);
-				ReleaseBuffer(nDstlen);
-			}
-			return *this;
-		}
-
-		int GetLength() const { return CString::GetLength() / sizeof(WCHAR); }   // as an array of characters
-#endif // _UNICODE
-		LPWSTR GetBuffer() { return (LPWSTR)CString::GetBuffer(0) ; }
-		LPCWSTR GetString() { return (LPCWSTR)m_pchData; }
-
-
-};
 
 
 

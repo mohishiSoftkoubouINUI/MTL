@@ -11,11 +11,23 @@
 	static class_name* FromHandlePermanent(handle_name hHnd) { return FromHandle(hHnd, NULL, NULL, NULL) ; } \
 	static handle_name RemoveHandle(handle_name hHnd) ;
 
+#if 0
 #define CLASS_HANDLE_CREATE(class_name, handle_name, class_base, class_ext) \
 	_INLINE class_name* class_name::FromHandle(handle_name hHnd, class_name* pClass, HWND hWndOwner, HANDLE_FUNC_NEW pFuncNew) \
 		{ return (class_name*)AfxGetApp()->FromHandle##class_ext(hHnd, (class_base*)pClass, hWndOwner, pFuncNew) ; } \
 	_INLINE handle_name class_name::RemoveHandle(handle_name hHnd) \
 		{ return (handle_name)AfxGetApp()->RemoveHandle##class_ext(hHnd); }
+#endif
+
+#define CLASS_HANDLE_CREATE(class_name, handle_name, class_base, class_ext) \
+	_INLINE class_name* class_name::FromHandle(handle_name hHnd, class_name* pClass, HWND hWndOwner, HANDLE_FUNC_NEW pFuncNew) \
+		{ typedef volatile class_base* (CWinApp::*HNDC_PFUNC)(handle_name, class_base*, HWND, HANDLE_FUNC_NEW) ; \
+			HNDC_PFUNC pFunc = (HNDC_PFUNC)&CWinApp::FromHandle##class_ext; \
+			return (class_name*)(AfxGetApp()->*pFunc)(hHnd, (class_base*)pClass, hWndOwner, pFuncNew) ; } \
+	_INLINE handle_name class_name::RemoveHandle(handle_name hHnd) \
+		{ typedef volatile handle_name (CWinApp::*HNDR_PFUNC)(handle_name) ; \
+			HNDR_PFUNC pFunc = (HNDR_PFUNC)&CWinApp::RemoveHandle##class_ext; \
+			return (handle_name)(AfxGetApp()->*pFunc)(hHnd); }
 
 
 #define FROM_HANDLE_PWND(t, h) t::FromHandle(h, NULL, m_hWnd)
@@ -77,12 +89,12 @@ class CGdiobj
 
 
 template<class C, class H, class B>
-class ATL_NO_VTABLE CHandleWrapper : public B
+class _NO_VTABLE CHandleWrapper : public B
 {
 	public:
 		CHandleWrapper(H hHnd = NULL) : B(hHnd), m_bFromHandle(hHnd != NULL) { }
 
-		virtual ~CHandleWrapper()
+		virtual ~CHandleWrapper() throw()
 		{
 			if (m_bFromHandle)
 			{
@@ -95,20 +107,17 @@ class ATL_NO_VTABLE CHandleWrapper : public B
 				C::RemoveHandle(hHandle);
 		}
 
-
+	public:
 		const BOOL m_bFromHandle;
 
 	public:
-		operator H() const
-		{
-			return this == NULL ? NULL : (H)(*(B*)this);
-		}
+		operator H() const { return this == NULL ? NULL : (H)(*(B*)this); }
 
 		BOOL operator==(const C& rc) const { return ((H)rc) == (H)*this; }
 		BOOL operator!=(const C& rc) const { return ((H)rc) != (H)*this; }
 
 
-		BOOL Attach(H hObject)
+		BOOL Attach(H hObject) throw()
 		{
 			ASSERT(GetSafeHandle() == NULL);      // only attach once, detach on destroy
 			if (hObject == NULL)
@@ -122,7 +131,7 @@ class ATL_NO_VTABLE CHandleWrapper : public B
 			return TRUE;
 		}
 
-		H Detach()
+		H Detach() throw()
 		{
 			H hObject = B::Detach();
 			if (hObject != NULL)
@@ -1988,7 +1997,7 @@ class CPreviewDC : public CDCMTL
 					}
 					pnCurDelta++;
 				}
-				lpszCurChar = _tcsinc(lpszCurChar);
+				lpszCurChar = _CHAR_INC(lpszCurChar);
 			}
 
 			nAlignment &= TA_CENTER | TA_RIGHT;

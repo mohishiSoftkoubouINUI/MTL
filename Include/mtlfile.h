@@ -1640,7 +1640,7 @@ class CArchive
 			// Ensure schema map is initialized
 			if (pSchemaMap->Lookup((void*)((DWORD_PTR)(objTypeArrayRef)), pTemp))
 			{
-				pObjTypeArray = static_cast<CArray<LoadArrayObjType>*>(pTemp);
+				pObjTypeArray = (CArray<LoadArrayObjType>*)(pTemp);
 			}
 			else
 			{
@@ -1803,7 +1803,7 @@ class CArchive
 
 					void* pTemp = NULL;
 					m_pSchemaMap->Lookup((void*)(DWORD_PTR)(objTypeArrayRef), pTemp);
-					CArray<LoadArrayObjType>* pObjTypeArray = static_cast<CArray<LoadArrayObjType>*>(pTemp);
+					CArray<LoadArrayObjType>* pObjTypeArray = (CArray<LoadArrayObjType>*)(pTemp);
 					ENSURE(pObjTypeArray);
 					pObjTypeArray->InsertAt(m_nMapCount, typeCObject);
 
@@ -2081,7 +2081,7 @@ class CArchive
 
 				if (m_pSchemaMap->Lookup((void*)((DWORD_PTR)(objTypeArrayRef)), pTemp))
 				{
-					CArray<LoadArrayObjType>* pTypeArray = static_cast<CArray<LoadArrayObjType>*>(pTemp);
+					CArray<LoadArrayObjType>* pTypeArray = (CArray<LoadArrayObjType>*)(pTemp);
 					ENSURE(pTypeArray);
 					if (obTag <= (DWORD)pTypeArray->GetUpperBound())
 					{
@@ -2133,7 +2133,7 @@ class CArchive
 					m_nObjectSchema = nSchemaSave;
 					ASSERT_VALID(pOb);
 				}
-					CATCH_ALL(e)
+				CATCH_ALL(e)
 				{
 					if (pOb != NULL)
 					{

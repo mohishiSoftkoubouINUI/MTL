@@ -4,15 +4,6 @@
 
 
 
-// for global data that should be in COMDATs (packaged data)
-#ifndef AFX_COMDAT
-#define AFX_COMDAT _SELECTANY
-#endif
-
-
-
-
-
 
 _INLINE BOOL CObject::IsKindOf(const CRuntimeClass* pClass) const
 {
@@ -64,6 +55,7 @@ class CCmdTarget : public CObject
 		static _ATL_MSG*& GetLastSentMsg()
 		{
 			static _ATL_MSG* m_lastSentMsg;
+
 			return m_lastSentMsg;
 		}
 
@@ -123,8 +115,85 @@ class CCmdTarget : public CObject
 		void EndWaitCursor();
 		void RestoreWaitCursor();
 
+		/////////////////////////////////////////////////////////////////////////////
+		// Locate event sink map entry
+
+#if 0
+		PTM_WARNING_DISABLE
+		static const AFX_EVENTSINKMAP* _GetEventSinkMap()
+		{
+			static const AFX_EVENTSINKMAP_ENTRY _eventsinkEntries[] =
+			{
+				{ NULL, -1, NULL, 0,
+				(AFX_PMSG)NULL, (AFX_PMSG)NULL, (size_t)-1, afxDispCustom, (UINT)-1, (UINT)-1 }
+				// nothing here
+			};
+
+			static UINT _eventsinkEntryCount = (UINT)0;
+
+			static const AFX_EVENTSINKMAP eventsinkMap =
+			{
+				NULL,
+				&_eventsinkEntries[0],
+				&_eventsinkEntryCount
+			};
+
+			return &eventsinkMap;
+		}
+		PTM_WARNING_RESTORE
+#endif
+		static const AFX_EVENTSINKMAP* _GetEventSinkMap() { return NULL ; }
+
+		virtual const AFX_EVENTSINKMAP* GetEventSinkMap() const { return _GetEventSinkMap() ; }
+
+		const AFX_EVENTSINKMAP_ENTRY* GetEventSinkEntry(UINT idCtrl, AFX_EVENT* pEvent)
+		{
+			ENSURE_ARG(pEvent != NULL);
+
+			size_t flag = (pEvent->m_eventKind != AFX_EVENT::event);
+
+			const AFX_EVENTSINKMAP* pSinkMap = GetEventSinkMap();
+
+			while (pSinkMap != NULL)
+			{
+				// find matching AFX_EVENTSINKMAP_ENTRY
+				const AFX_EVENTSINKMAP_ENTRY* pEntry = pSinkMap->lpEntries;
+
+				while (pEntry->dispEntry.nPropOffset != -1)
+				{
+					if ((pEntry->dispEntry.lDispID == pEvent->m_dispid) &&
+						(pEntry->dispEntry.nPropOffset == flag))
+					{
+						if (pEntry->nCtrlIDLast == (UINT)-1)
+						{
+							// check for wildcard match or exact match
+							if ((pEntry->nCtrlIDFirst == (UINT)-1) ||
+								(pEntry->nCtrlIDFirst == idCtrl))
+								return pEntry;
+						}
+						else
+						{
+							// check for range match
+							if ((pEntry->nCtrlIDFirst <= idCtrl) &&
+								(idCtrl <= pEntry->nCtrlIDLast))
+								return pEntry;
+						}
+					}
+
+					++pEntry;
+				}
+				// check base class
+				pSinkMap = pSinkMap->pBaseMap;
+			}
+
+			return NULL;    // no matching entry
+		}
 
 };
+
+
+
+
 
 class CWinMsg
 {
@@ -222,6 +291,7 @@ class CCmdUI        // simple helper class
 				return TRUE;     // ignore invalid IDs
 
 			m_bEnableChanged = FALSE;
+
 			BOOL bResult = pTarget->OnCmdMsg(m_nID, CN_UPDATE_COMMAND_UI, this, NULL);
 			if (!bResult)
 				ASSERT(!m_bEnableChanged); // not routed
@@ -249,13 +319,11 @@ class CCmdUI        // simple helper class
 
 
 
-class CWMHnd : public CCmdTarget, public CWindow
+class _NO_VTABLE CWMHnd : public CCmdTarget, public CWindow
 {
 	public:
 		CWMHnd(HWND hWnd = NULL) : CWindow(hWnd), m_bFromHandle(hWnd != NULL)
 		{
-			m_pfnSuperWindowProc = ::DefWindowProc ;
-			m_hWndOwner = NULL;
 		}
 
 		virtual ~CWMHnd()
@@ -265,15 +333,9 @@ class CWMHnd : public CCmdTarget, public CWindow
 				CWindow::Detach();
 				return ;
 			}
-
-			if (m_hWnd != NULL)
-				RemoveHandle(m_hWnd);
 		}
 
 	public:
-		IMPLEMENT_HANDLE_CREATE(CWMHnd, HWND)
-
-
 
 		// Advanced: virtual AdjustWindowRect
 		enum AdjustType { adjustBorder = 0, adjustOutside = 1 };
@@ -286,11 +348,6 @@ class CWMHnd : public CCmdTarget, public CWindow
 
 		const BOOL m_bFromHandle;
 
-		HWND	m_hWndOwner;
-
-		CWndProcThunk m_thunk;
-		WNDPROC m_pfnSuperWindowProc;
-
 	public:
 		operator HWND() const { return (this == NULL) ? NULL : m_hWnd; }
 		BOOL operator==(const CWMHnd& wnd) const { return ((HWND)wnd) == m_hWnd; }
@@ -302,98 +359,9 @@ class CWMHnd : public CCmdTarget, public CWindow
 			return DefWindowProc(pMsg->message, pMsg->wParam, pMsg->lParam);
 		}
 
-		virtual LRESULT DefWindowProc(UINT nMsg, WPARAM wParam, LPARAM lParam) { return ::CallWindowProc(m_pfnSuperWindowProc, m_hWnd, nMsg, wParam, lParam); }
-		virtual LRESULT WindowProc(UINT message, WPARAM wParam, LPARAM lParam) { return DefWindowProc(message, wParam, lParam); }
+		virtual LRESULT DefWindowProc(UINT nMsg, WPARAM wParam, LPARAM lParam) { return ::DefWindowProc(m_hWnd, nMsg, wParam, lParam); }
 
 
-		static LRESULT CALLBACK AfxWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
-		{
-			CWMHnd* pThis = (CWMHnd*)hWnd;
-
-			// set a ptr to this message and save the old value
-			_ATL_MSG*& pLastMsg = GetLastSentMsg();
-			_ATL_MSG* pOldLastMsg = pLastMsg;
-			_ATL_MSG msg ;
-			msg.hwnd = pThis->m_hWnd ;
-			msg.message = uMsg ;
-			msg.wParam = wParam ;
-			msg.lParam = lParam ;
-			pLastMsg = &msg;
-
-			LRESULT lResult = pThis->WindowProc(uMsg, wParam, lParam);
-
-			pLastMsg = pOldLastMsg;
-
-			return lResult;
-		}
-
-		BOOL SubclassWindow(HWND hWnd, LPCREATESTRUCT lpcs = NULL)
-		{
-			ASSERT(m_hWnd == NULL);     // only attach once, detach on destroy
-
-			if (hWnd == NULL)
-				return FALSE;
-
-			m_thunk.Init(&AfxWindowProc, this);
-
-#ifndef _MTL_ATL3
-			WNDPROC pProc = m_thunk.GetWNDPROC();
-#else
-			WNDPROC pProc = (WNDPROC)&(m_thunk.thunk);
-#endif
-			WNDPROC wndproc = (WNDPROC)::SetWindowLongPtr(hWnd, GWLP_WNDPROC, (LONG_PTR)pProc);
-			if (wndproc == NULL)
-				return FALSE;
-
-			m_pfnSuperWindowProc = wndproc;
-			m_hWnd = hWnd;
-
-			FromHandle(hWnd, this, (lpcs != NULL) ? lpcs->hwndParent : NULL);
-
-			return TRUE;
-		}
-
-		HWND UnsubclassWindow()
-		{
-			ASSERT(m_hWnd != NULL);
-
-			HWND hWnd = m_hWnd;
-
-			if (m_pfnSuperWindowProc != ::DefWindowProc)
-			{
-				if (!::SetWindowLongPtr(hWnd, GWLP_WNDPROC, (LONG_PTR)m_pfnSuperWindowProc))
-					return NULL;
-
-				m_pfnSuperWindowProc = ::DefWindowProc;
-			}
-
-			m_hWnd = NULL;
-
-			if (hWnd != NULL)
-				RemoveHandle(hWnd);
-
-			return hWnd;
-		}
-
-
-		LRESULT AfxCallWndProc(CWMHnd* pWnd, UINT nMsg, WPARAM wParam = 0, LPARAM lParam = 0)
-		{
-			_ATL_MSG*& pMsg = GetLastSentMsg();
-			_ATL_MSG* pOldMsg = pMsg;
-
-			_ATL_MSG wndMsg ;
-			wndMsg.hwnd = pWnd->m_hWnd ;
-			wndMsg .message = nMsg ;
-			wndMsg.wParam = wParam ;
-			wndMsg.lParam = lParam ;
-			pMsg = &wndMsg ;
-
-			LRESULT lResult = pWnd->WindowProc(nMsg, wParam, lParam) ;
-
-			pMsg = pOldMsg;
-
-			return lResult;
-		}
 
 
 		virtual void CalcWindowRect(LPRECT lpClientRect, UINT nAdjustType = adjustBorder)
@@ -821,7 +789,7 @@ class CWMHnd : public CCmdTarget, public CWindow
 
 		//CWMHnd* GetOwner() { return (m_hWndOwner != NULL) ? FromHandle(m_hWndOwner) : GetParent(); }
 		HWND GetSafeHwnd() const { return (this == NULL) ? NULL : m_hWnd; }
-		void SetOwner(CWMHnd* pOwnerWnd) { m_hWndOwner = (pOwnerWnd != NULL) ? (pOwnerWnd)->m_hWnd : NULL; }
+		//void SetOwner(CWMHnd* pOwnerWnd) { m_hWndOwner = (pOwnerWnd != NULL) ? (pOwnerWnd)->m_hWnd : NULL; }
 
 		//void DragAcceptFiles(BOOL bAccept) { ASSERT(::IsWindow(m_hWnd)); ::DragAcceptFiles(m_hWnd, bAccept); }
 		BOOL DragDetect(POINT pt) const { ASSERT(::IsWindow(m_hWnd)); return ::DragDetect(m_hWnd, pt); }
@@ -946,8 +914,6 @@ class CWMHnd : public CCmdTarget, public CWindow
 
 
 };
-
-
 
 
 

@@ -6,6 +6,7 @@
 #define _INLINE __inline
 #define _FORCEINLINE __forceinline
 #define _SELECTANY __declspec(selectany)
+#define _NO_VTABLE __declspec(novtable)
 
 
 
@@ -882,10 +883,12 @@ struct MTL_ONCMDMSG
 	((WORD)(n) == HIWORD(w)) \
 
 #define IS_NOTIFYCODE_ID(w, n, id) \
-	((WORD)(n) == HIWORD(w) && (id) == LOWORD(w)) \
+	(MAKEWPARAM(id, n) == (WPARAM)(w)) \
+ //	((WORD)(n) == HIWORD(w) && (id) == LOWORD(w)) \
 
 #define IS_NOTIFYCODE_ID_RANGE(w, n, id, idLast) \
-	((WORD)(n) == HIWORD(w) && (id) <= LOWORD(w) && (idLast) >= LOWORD(w)) \
+	(MAKEWPARAM(id, n) <= (WPARAM)(w) && MAKEWPARAM(idLast, n) >= (WPARAM)(w)) \
+//	((WORD)(n) == HIWORD(w) && (id) <= LOWORD(w) && (idLast) >= LOWORD(w)) \
 
 
 #define ON_COMMAND(id, memberFxn) \

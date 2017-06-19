@@ -1185,15 +1185,16 @@ class CToolBar : public CControlBar
 				VERIFY(DefWindowProc(TB_DELETEBUTTON, nIndex, 0));
 
 				// Force a recalc of the toolbar's layout to work around a comctl bug
-				if (pButton->iString<-1){
-					int iTextRows;
-					iTextRows = (int)::SendMessage(m_hWnd, TB_GETTEXTROWS, 0, 0);
+				if (pButton->iString < -1)
+				{
+					INT iTextRows = (int)::SendMessage(m_hWnd, TB_GETTEXTROWS, 0, 0);
 					::SendMessage(m_hWnd, WM_SETREDRAW, FALSE, 0);
 					::SendMessage(m_hWnd, TB_SETMAXTEXTROWS, iTextRows + 1, 0);
 					::SendMessage(m_hWnd, TB_SETMAXTEXTROWS, iTextRows, 0);
 					::SendMessage(m_hWnd, WM_SETREDRAW, TRUE, 0);
 					pButton->iString += STRING_REFRESH_OFFSET;
 				}
+
 				VERIFY(DefWindowProc(TB_INSERTBUTTON, nIndex, (LPARAM)pButton));
 				ModifyStyle(0, dwStyle & WS_VISIBLE);
 
@@ -1339,6 +1340,30 @@ class CToolBar : public CControlBar
 			_SetButton(nIndex, &button);
 
 			return TRUE;
+		}
+
+		void SetHeight(int cyHeight)
+		{
+			ASSERT_VALID(this);
+
+			int nHeight = cyHeight;
+			if (m_dwStyle & CBRS_BORDER_TOP)
+				cyHeight -= afxData.cyBorder2;
+			if (m_dwStyle & CBRS_BORDER_BOTTOM)
+				cyHeight -= afxData.cyBorder2;
+			m_cyBottomBorder = (cyHeight - m_sizeButton.cy) / 2;
+			// if there is an extra pixel, m_cyTopBorder will get it
+			m_cyTopBorder = cyHeight - m_sizeButton.cy - m_cyBottomBorder;
+			if (m_cyTopBorder < 0)
+			{
+				TRACE(traceAppMsg, 0, "Warning: CToolBar::SetHeight(%d) is smaller than button.\n", nHeight);
+				m_cyBottomBorder += m_cyTopBorder;
+				m_cyTopBorder = 0;  // will clip at bottom
+			}
+
+			// recalculate the non-client region
+			SetWindowPos(NULL, 0, 0, 0, 0, SWP_DRAWFRAME | SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOZORDER);
+			Invalidate();   // just to be nice if called when toolbar is visible
 		}
 
 		void SetSizes(SIZE sizeButton, SIZE sizeImage)
@@ -1545,9 +1570,8 @@ _INLINE void CControlBar::DrawBorders(CDC* pDC, CRect& rect)
 
 	// prepare for dark lines
 	ASSERT(rect.top == 0 && rect.left == 0);
-	CRect rect1, rect2;
-	rect1 = rect;
-	rect2 = rect;
+	CRect rect1 = rect;
+	CRect rect2 = rect;
 	COLORREF clr = afxData.clrBtnShadow;
 
 

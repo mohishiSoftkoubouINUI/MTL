@@ -16,7 +16,12 @@ class ATL_NO_VTABLE CDocument : public CCmdTarget
 
 		}
 
-		~CDocument() ;
+		void CDocumentDestruct();
+
+		virtual ~CDocument()
+		{
+			_VOLATILE_CLASS_FUNC_V_V(CDocument, CDocumentDestruct)
+		}
 
 	public:
 		// メッセージマップ
@@ -444,7 +449,7 @@ _INLINE void CFrameWnd::OnUpdateFrameTitle(BOOL bAddToTitle)
 }
 
 
-_INLINE CView::~CView()
+_INLINE void CView::CViewDestruct()
 {
 	if (m_pDocument != NULL)
 		m_pDocument->RemoveView(this);
@@ -754,7 +759,7 @@ class ATL_NO_VTABLE CDocTemplate : public CCmdTarget
 
 };
 
-_INLINE CDocument::~CDocument()
+_INLINE void CDocument::CDocumentDestruct()
 {
 	// do not call DeleteContents here !
 

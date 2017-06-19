@@ -302,16 +302,7 @@ class CList
 
 		~CList()
 		{
-			CNode* pCNode = m_pNodeHead;
-
-			while (pCNode != NULL)
-			{
-				CNode* pCNodeNext = pCNode->pNext;
-
-				delete pCNode;
-
-				pCNode = pCNodeNext;
-			}
+			RemoveAll() ;
 		}
 
 	public:
@@ -321,7 +312,7 @@ class CList
 			CNode* pNext;
 			TYPE data;
 
-			CNode(CNode* pNewPrev = NULL, CNode* pNewNext = NULL) { pPrev = pNewPrev; pNext = pNewNext; data = 0 ;}
+			CNode(CNode* pNewPrev = NULL, CNode* pNewNext = NULL) { pPrev = pNewPrev; pNext = pNewNext; ::new((void*)(&data)) TYPE ; }
 
 		};
 
@@ -359,7 +350,6 @@ class CList
 			pNewNode->data = newElement;
 			if (m_pNodeHead != NULL)
 				m_pNodeHead->pPrev = pNewNode;
-
 			else
 				m_pNodeTail = pNewNode;
 			m_pNodeHead = pNewNode;
@@ -429,6 +419,23 @@ class CList
 			POSITION pos = Find(deletehValue);
 			if (pos != NULL)
 				RemoveAt(pos) ;
+		}
+
+		void RemoveAll()
+		{
+			CNode* pCNode = m_pNodeHead;
+
+			while (pCNode != NULL)
+			{
+				CNode* pCNodeNext = pCNode->pNext;
+
+				delete pCNode;
+
+				pCNode = pCNodeNext;
+			}
+
+			m_nCount = 0;
+			m_pNodeHead = m_pNodeTail = NULL;
 		}
 
 		void RemoveAt(POSITION position)
@@ -502,7 +509,7 @@ template<class TKEY, class TYPE>
 class CPair
 {
 	public:
-		CPair() { key = NULL; value = NULL; bDelete = FALSE; }
+		CPair() { /* key = NULL; value = NULL; */ bDelete = FALSE; }
 		CPair(TKEY keyval, BOOL bdel = TRUE) { key = keyval; value = NULL; bDelete = bdel; }
 
 	public:
@@ -574,7 +581,7 @@ class CMapList : public CList<TPAIR>
 			return (*this)[key] ;
 		}
 
-		TYPE GetValueAt(TKEY key)
+		TYPE GetValueAt(TKEY key) const
 		{
 			POSITION pos = Find(key);
 			if (pos != NULL)
@@ -606,12 +613,6 @@ class CMapList : public CList<TPAIR>
 			}
 
 			return FALSE;
-		}
-
-		void RemoveAll()
-		{
-			while (m_nCount > 0)
-				RemoveTail() ;
 		}
 
 		void SetAt(const TKEY key, TYPE value)
@@ -1327,7 +1328,7 @@ typedef CArray<void*> CPtrArray;
 typedef CList<void*, void*> CPtrList;
 typedef CList<CObject*> CObList;
 
-typedef CMapList<LPCTSTR, void*> CMapStringToPtr;
+typedef CMapList<CString, void*> CMapStringToPtr;
 typedef CMapList<void*, void*> CMapPtrToPtr ;
 
 
@@ -1398,7 +1399,7 @@ class CModuleState
 
 		// variables related to a given process in a module
 		//  (used to be AFX_MODULE_PROCESS_STATE)
-		void(*m_pfnFilterToolTipMessage)(MSG*, CWnd*);
+		void (*m_pfnFilterToolTipMessage)(MSG*, CWnd*);
 
 		AFX_MODULE_THREAD_STATE* m_thread;
 

@@ -728,7 +728,7 @@ class CSplitterWnd : public CWnd
 
 			// create with the same wnd-class as MDI-Frame (no erase bkgnd)
 			if (!CreateEx(0, _afxWndMDIFrame, NULL, dwCreateStyle, 0, 0, 0, 0,
-				pParentWnd->m_hWnd, (HMENU)(UINT_PTR)nID, NULL))
+							pParentWnd->m_hWnd, (HMENU)(UINT_PTR)nID, NULL))
 				return FALSE;       // create invisible
 
 			// attach the initial splitter parts
@@ -758,13 +758,13 @@ class CSplitterWnd : public CWnd
 			}
 			END_CATCH_ALL
 
-				return TRUE;
+			return TRUE;
 		}
 
 		// Create a multiple view type splitter with static layout
 		virtual BOOL CreateStatic(CWnd* pParentWnd, int nRows, int nCols,
-			DWORD dwStyle = WS_CHILD | WS_VISIBLE,
-			UINT nID = AFX_IDW_PANE_FIRST)
+								DWORD dwStyle = WS_CHILD | WS_VISIBLE,
+								UINT nID = AFX_IDW_PANE_FIRST)
 		{
 			ASSERT(pParentWnd != NULL);
 			ASSERT(nRows >= 1 && nRows <= 16);
@@ -832,7 +832,7 @@ class CSplitterWnd : public CWnd
 				if (pWnd == NULL)
 					AfxThrowMemoryException();
 			}
-				CATCH_ALL(e)
+			CATCH_ALL(e)
 			{
 				TRACE(traceAppMsg, 0, "Out of memory creating a splitter pane.\n");
 				// Note: DELETE_EXCEPTION(e) not required
@@ -840,7 +840,7 @@ class CSplitterWnd : public CWnd
 			}
 			END_CATCH_ALL
 
-				ASSERT_KINDOF(CWnd, pWnd);
+			ASSERT_KINDOF(CWnd, pWnd);
 			ASSERT(pWnd->m_hWnd == NULL);       // not yet created
 
 			DWORD dwStyle = AFX_WS_DEFAULT_VIEW & ~WS_BORDER;
@@ -848,7 +848,7 @@ class CSplitterWnd : public CWnd
 			// Create with the right size (wrong position)
 			CRect rect(CPoint(0, 0), sizeInit);
 			if (!pWnd->Create(NULL, NULL, dwStyle,
-				rect, this, IdFromRowCol(row, col), pContext))
+							rect, this, IdFromRowCol(row, col), pContext))
 			{
 				TRACE(traceAppMsg, 0, "Warning: couldn't create client pane for splitter.\n");
 				// pWnd will be cleaned up by PostNcDestroy
@@ -1036,8 +1036,7 @@ class CSplitterWnd : public CWnd
 					CView* pView = (CView*)GetPane(rowFrom, col);
 					ASSERT_KINDOF(CView, pView);
 					ASSERT(pView != pViewFrom);
-					if (pView->OnScroll(MAKEWORD(0xff, HIBYTE(nScrollCode)), 0,
-						bDoScroll))
+					if (pView->OnScroll(MAKEWORD(0xff, HIBYTE(nScrollCode)), 0, bDoScroll))
 					{
 						bResult = TRUE;
 					}
@@ -1060,8 +1059,7 @@ class CSplitterWnd : public CWnd
 					CView* pView = (CView*)GetPane(row, colFrom);
 					ASSERT_KINDOF(CView, pView);
 					ASSERT(pView != pViewFrom);
-					if (pView->OnScroll(MAKEWORD(LOBYTE(nScrollCode), 0xff), 0,
-						bDoScroll))
+					if (pView->OnScroll(MAKEWORD(LOBYTE(nScrollCode), 0xff), 0, bDoScroll))
 					{
 						bResult = TRUE;
 					}

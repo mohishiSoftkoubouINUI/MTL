@@ -62,31 +62,39 @@ class CTestCmdUI : public CCmdUI
 };
 
 
-
 class CWnd : public CWMHnd
 {
 	DECLARE_DYNCREATE(CWnd)
 
 
 	public:
-		CWnd(HWND hWnd = NULL)
+		CWnd(HWND hWnd = NULL) : CWMHnd(hWnd)
 		{
-			m_hWnd = hWnd ;
-			*(BOOL*)&m_bFromHandle = (hWnd != NULL) ;
-
 			m_nFlags = 0;
 			m_nModalResult = 0 ;
+
+			m_hWndOwner = NULL;
+
+			m_pfnSuperWindowProc = ::DefWindowProc;
 		}
 
-		virtual ~CWnd()
+		void CWndDestruct()
 		{
+			if (m_hWnd != NULL)
+				RemoveHandle(m_hWnd);
+
 			if (m_bFromHandle)
 			{
-				m_hWnd = NULL ;
+				m_hWnd = NULL;
 				return;
 			}
 
 			DELETE_HWND(this)
+		}
+
+		virtual ~CWnd()
+		{
+			_VOLATILE_CLASS_FUNC_V_V(CWnd, CWndDestruct)
 		}
 
 	public:
@@ -100,9 +108,13 @@ class CWnd : public CWMHnd
 			reposDefault = 0, reposQuery = 1, reposExtra = 2, reposNoPosLeftOver = 0x8000
 		};
 
-
 		UINT m_nFlags;      // see WF_ flags above
 		int m_nModalResult; // for return values from CWnd::RunModalLoop
+
+		HWND	m_hWndOwner;
+
+		CWndProcThunk m_thunk;
+		WNDPROC m_pfnSuperWindowProc;
 
 
 	public:
@@ -134,7 +146,7 @@ class CWnd : public CWMHnd
 
 					CWnd* pThis = (CWnd*)_AtlWinModule.ExtractCreateWndData();
 
-					((CWMHnd*)pThis)->SubclassWindow((HWND)wParam, ((LPCBT_CREATEWND)lParam)->lpcs);
+					pThis->AfxSubclassWindow((HWND)wParam, ((LPCBT_CREATEWND)lParam)->lpcs);
 				}
 			}
 			return ::CallNextHookEx(hHookOldCbtFilter, code, wParam, lParam);
@@ -163,8 +175,99 @@ class CWnd : public CWMHnd
 			return TRUE;
 		}
 
+		static LRESULT CALLBACK AfxWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) throw()
+		{
+			CWnd* pThis = (CWnd*)hWnd;
+
+			// set a ptr to this message and save the old value
+			_ATL_MSG*& pLastMsg = GetLastSentMsg();
+			_ATL_MSG* pOldLastMsg = pLastMsg;
+
+			_ATL_MSG msg;
+			msg.hwnd = pThis->m_hWnd;
+			msg.message = uMsg;
+			msg.wParam = wParam;
+			msg.lParam = lParam;
+
+			pLastMsg = &msg;
+
+			LRESULT lResult = pThis->WindowProc(uMsg, wParam, lParam);
+
+			pLastMsg = pOldLastMsg;
+
+			return lResult;
+		}
+
+		BOOL AfxSubclassWindow(HWND hWnd, LPCREATESTRUCT lpcs = NULL)
+		{
+			ASSERT(m_hWnd == NULL);     // only attach once, detach on destroy
+
+			if (hWnd == NULL)
+				return FALSE;
+
+			m_thunk.Init(&AfxWindowProc, this);
+
+#ifndef _MTL_ATL3
+			WNDPROC pProc = m_thunk.GetWNDPROC();
+#else
+			WNDPROC pProc = (WNDPROC)&(m_thunk.thunk);
+#endif
+			WNDPROC wndproc = (WNDPROC)::SetWindowLongPtr(hWnd, GWLP_WNDPROC, (LONG_PTR)pProc);
+			if (wndproc == NULL)
+				return FALSE;
+
+			m_pfnSuperWindowProc = wndproc;
+			m_hWnd = hWnd;
+
+			FromHandle(hWnd, this, (lpcs != NULL) ? lpcs->hwndParent : NULL);
+
+			return TRUE;
+		}
+
+		HWND AfxUnsubclassWindow()
+		{
+			ASSERT(m_hWnd != NULL);
+
+			HWND hWnd = m_hWnd;
+
+			if (m_pfnSuperWindowProc != ::DefWindowProc)
+			{
+				if (!::SetWindowLongPtr(hWnd, GWLP_WNDPROC, (LONG_PTR)m_pfnSuperWindowProc))
+					return NULL;
+
+				m_pfnSuperWindowProc = ::DefWindowProc;
+			}
+
+			m_hWnd = NULL;
+
+			if (hWnd != NULL)
+				RemoveHandle(hWnd);
+
+			return hWnd;
+		}
+
+		LRESULT AfxCallWndProc(CWnd* pWnd, UINT nMsg, WPARAM wParam = 0, LPARAM lParam = 0)
+		{
+			_ATL_MSG*& pMsg = GetLastSentMsg();
+			_ATL_MSG* pOldMsg = pMsg;
+
+			_ATL_MSG wndMsg;
+			wndMsg.hwnd = pWnd->m_hWnd;
+			wndMsg.message = nMsg;
+			wndMsg.wParam = wParam;
+			wndMsg.lParam = lParam;
+
+			pMsg = &wndMsg;
+
+			LRESULT lResult = pWnd->WindowProc(nMsg, wParam, lParam);
+
+			pMsg = pOldMsg;
+
+			return lResult;
+		}
 
 
+		virtual LRESULT DefWindowProc(UINT nMsg, WPARAM wParam, LPARAM lParam) { return ::CallWindowProc(m_pfnSuperWindowProc, m_hWnd, nMsg, wParam, lParam); }
 
 		virtual LRESULT WindowProc(UINT nMsg, WPARAM wParam, LPARAM lParam)
 		{
@@ -1063,7 +1166,10 @@ class CWnd : public CWMHnd
 			}
 		}
 
-		void SendMessageToDescendants(UINT message, WPARAM wParam = 0, LPARAM lParam = 0, BOOL bDeep = TRUE, BOOL bOnlyPerm = FALSE)  { ASSERT(::IsWindow(m_hWnd)); SendMessageToDescendants(m_hWnd, message, wParam, lParam, bDeep, bOnlyPerm); }
+		void SendMessageToDescendants(UINT message, WPARAM wParam = 0, LPARAM lParam = 0, BOOL bDeep = TRUE, BOOL bOnlyPerm = FALSE)  
+		{ ASSERT(::IsWindow(m_hWnd)); SendMessageToDescendants(m_hWnd, message, wParam, lParam, bDeep, bOnlyPerm); }
+
+		void SetOwner(CWMHnd* pOwnerWnd) { m_hWndOwner = (pOwnerWnd != NULL) ? (pOwnerWnd)->m_hWnd : NULL; }
 
 
 		/////////////////////////////////////////////////////////////////////////////
@@ -1071,7 +1177,7 @@ class CWnd : public CWMHnd
 
 		BOOL SubclassWindow(HWND hWnd)
 		{
-			return CWMHnd::SubclassWindow(hWnd) ;
+			return AfxSubclassWindow(hWnd) ;
 		}
 
 		BOOL SubclassDlgItem(UINT nID, CWnd* pParent)
@@ -1089,7 +1195,7 @@ class CWnd : public CWMHnd
 
 		HWND UnsubclassWindow()
 		{
-			return CWMHnd::UnsubclassWindow() ;
+			return AfxUnsubclassWindow() ;
 		}
 
 

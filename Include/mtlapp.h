@@ -65,101 +65,8 @@ class CModuleThreadState : public CThreadState
 		INT_PTR			m_nLastStatus;      // last flyby status message
 		CControlBar*	m_pLastStatus; // last flyby status control bar
 
-		CHandleHashList<HWND, CWMHnd>	m_cWnd;
-
-		CHandleList<HMENU, CMenu>	m_cChildMenu;
-
-		CHandleList<HDC, CDC>		m_cChildDC;
-		CHandleList<HGDIOBJ, CGdiObject>	m_cChildGdiobj;
-
-		CHandleList<HANDLE, void>	m_cLocalHandle;
-
 
 	public:
-		CWMHnd* FromHandleWnd(HWND hWnd, CWMHnd* pCWMHnd = NULL, HWND hWndOwner = NULL, HANDLE_FUNC_NEW pFuncNew = NULL)
-		{
-			if (hWnd == NULL) return NULL ;
-
-			return m_cWnd.FromHandle(hWnd, pCWMHnd, hWndOwner, pFuncNew);
-		}
-		HWND RemoveHandleWnd(HWND hWnd)
-		{
-			if (hWnd == NULL) return NULL;
-
-			//TRACE("RemoveHandleWnd>S:m_cChildMenu(%d), m_cChildDC(%d), m_cChildGdiobj(%d), m_cLocalHandle(%d)\n",
-			//		m_cChildMenu.GetCount(), m_cChildDC.GetCount(), m_cChildGdiobj.GetCount(), m_cLocalHandle.GetCount()) ;
-
-			HWND hRemoveWnd = ((void*)hWnd != HANDLE_ADDRESS_INVALID) ? m_cWnd.RemoveHandle(hWnd) : NULL;
-
-			m_cWnd.RemoveOwner(hWnd);
-
-			m_cChildMenu.RemoveOwner(hWnd);
-			m_cChildDC.RemoveOwner(hWnd);
-			m_cChildGdiobj.RemoveOwner(hWnd);
-			m_cLocalHandle.RemoveOwner(hWnd);
-
-			//TRACE("RemoveHandleWnd>E:m_cChildMenu(%d), m_cChildDC(%d), m_cChildGdiobj(%d), m_cLocalHandle(%d), m_cWnd(%d)\n",
-			//	m_cChildMenu.GetCount(), m_cChildDC.GetCount(), m_cChildGdiobj.GetCount(), m_cLocalHandle.GetCount(), m_cWnd.GetCount());
-
-			return hRemoveWnd;
-		}
-
-
-		CMenu* FromHandleMenu(HMENU hMenu, CMenu* pCMenu = NULL, HWND hWndOwner = NULL, HANDLE_FUNC_NEW pFuncNew = NULL)
-		{
-			if (hMenu == NULL) return NULL;
-
-			return m_cChildMenu.FromHandle(hMenu, pCMenu, hWndOwner, pFuncNew);
-		}
-		HMENU RemoveHandleMenu(HMENU hMenu)
-		{
-			if (hMenu == NULL) return NULL;
-
-			return m_cChildMenu.RemoveHandle(hMenu);
-		}
-
-
-		CDC* FromHandleDC(HDC hDC, CDC* pCDC = NULL, HWND hWndOwner = NULL, HANDLE_FUNC_NEW pFuncNew = NULL)
-		{
-			if (hDC == NULL) return NULL;
-
-			return m_cChildDC.FromHandle(hDC, pCDC, hWndOwner, pFuncNew);
-		}
-		HDC RemoveHandleDC(HDC hDC)
-		{
-			if (hDC == NULL) return NULL;
-
-			return m_cChildDC.RemoveHandle(hDC);
-		}
-
-
-		CGdiObject* FromHandleGdiobj(HGDIOBJ hGdiobj, CGdiObject* pCGdiObject = NULL, HWND hWndOwner = NULL, HANDLE_FUNC_NEW pFuncNew = NULL)
-		{
-			if (hGdiobj == NULL) return NULL;
-
-			return m_cChildGdiobj.FromHandle(hGdiobj, pCGdiObject, hWndOwner, pFuncNew);
-		}
-		HGDIOBJ RemoveHandleGdiobj(HGDIOBJ hGdiobj)
-		{
-			if (hGdiobj == NULL) return NULL;
-
-			return m_cChildGdiobj.RemoveHandle(hGdiobj);
-		}
-
-
-		void* FromHandleHnd(HANDLE hHandle, void* pVoid = NULL, HWND hWndOwner = NULL, HANDLE_FUNC_NEW pFuncNew = NULL)
-		{
-			if (hHandle == NULL) return NULL;
-
-			return m_cLocalHandle.FromHandle(hHandle, pVoid, hWndOwner, pFuncNew);
-		}
-		HANDLE RemoveHandleHnd(HANDLE hHandle)
-		{
-			if (hHandle == NULL) return NULL;
-
-			return m_cLocalHandle.RemoveHandle(hHandle);
-		}
-
 
 
 };
@@ -374,8 +281,6 @@ _INLINE CWinThread* AfxBeginThread(AFX_THREADPROC pfnThreadProc, LPVOID pParam,
 }
 
 
-
-
 class CWinApp : public CWinThread, public CModuleThreadState, public CWinMsg
 {
 	public:
@@ -460,7 +365,7 @@ class CWinApp : public CWinThread, public CModuleThreadState, public CWinMsg
 		// メッセージマップ
 		DECLARE_MESSAGE_MAP()
 
-	public:
+
 		static CWinApp* m_pCWinApp;
 
 		// Restart Manager support
@@ -532,13 +437,113 @@ class CWinApp : public CWinThread, public CModuleThreadState, public CWinMsg
 		// help mode used by the app
 		AFX_HELP_TYPE m_eHelpType;
 
+
+		CHandleHashList<HWND, CWMHnd>	m_cWnd;
+
+		CHandleList<HMENU, CMenu>	m_cChildMenu;
+
+		CHandleList<HDC, CDC>		m_cChildDC;
+		CHandleList<HGDIOBJ, CGdiObject>	m_cChildGdiobj;
+
+		CHandleList<HANDLE, void>	m_cLocalHandle;
+
+
 	public:
+		CWMHnd* FromHandleWnd(HWND hWnd, CWMHnd* pCWMHnd = NULL, HWND hWndOwner = NULL, HANDLE_FUNC_NEW pFuncNew = NULL)
+		{
+			if (hWnd == NULL) return NULL;
+
+			return m_cWnd.FromHandle(hWnd, pCWMHnd, hWndOwner, pFuncNew);
+		}
+		HWND RemoveHandleWnd(HWND hWnd)
+		{
+			if (hWnd == NULL) return NULL;
+
+			//TRACE("RemoveHandleWnd>S:m_cChildMenu(%d), m_cChildDC(%d), m_cChildGdiobj(%d), m_cLocalHandle(%d)\n",
+			//		m_cChildMenu.GetCount(), m_cChildDC.GetCount(), m_cChildGdiobj.GetCount(), m_cLocalHandle.GetCount()) ;
+
+			HWND hRemoveWnd = ((void*)hWnd != HANDLE_ADDRESS_INVALID) ? m_cWnd.RemoveHandle(hWnd) : NULL;
+
+			m_cWnd.RemoveOwner(hWnd);
+
+			m_cChildMenu.RemoveOwner(hWnd);
+			m_cChildDC.RemoveOwner(hWnd);
+			m_cChildGdiobj.RemoveOwner(hWnd);
+			m_cLocalHandle.RemoveOwner(hWnd);
+
+			//TRACE("RemoveHandleWnd>E:m_cChildMenu(%d), m_cChildDC(%d), m_cChildGdiobj(%d), m_cLocalHandle(%d), m_cWnd(%d)\n",
+			//	m_cChildMenu.GetCount(), m_cChildDC.GetCount(), m_cChildGdiobj.GetCount(), m_cLocalHandle.GetCount(), m_cWnd.GetCount());
+
+			return hRemoveWnd;
+		}
+
+
+		CMenu* FromHandleMenu(HMENU hMenu, CMenu* pCMenu = NULL, HWND hWndOwner = NULL, HANDLE_FUNC_NEW pFuncNew = NULL)
+		{
+			if (hMenu == NULL) return NULL;
+
+			return m_cChildMenu.FromHandle(hMenu, pCMenu, hWndOwner, pFuncNew);
+		}
+		HMENU RemoveHandleMenu(HMENU hMenu)
+		{
+			if (hMenu == NULL) return NULL;
+
+			return m_cChildMenu.RemoveHandle(hMenu);
+		}
+
+
+		CDC* FromHandleDC(HDC hDC, CDC* pCDC = NULL, HWND hWndOwner = NULL, HANDLE_FUNC_NEW pFuncNew = NULL)
+		{
+			if (hDC == NULL) return NULL;
+
+			return m_cChildDC.FromHandle(hDC, pCDC, hWndOwner, pFuncNew);
+		}
+		HDC RemoveHandleDC(HDC hDC)
+		{
+			if (hDC == NULL) return NULL;
+
+			return m_cChildDC.RemoveHandle(hDC);
+		}
+
+
+		CGdiObject* FromHandleGdiobj(HGDIOBJ hGdiobj, CGdiObject* pCGdiObject = NULL, HWND hWndOwner = NULL, HANDLE_FUNC_NEW pFuncNew = NULL)
+		{
+			if (hGdiobj == NULL) return NULL;
+
+			return m_cChildGdiobj.FromHandle(hGdiobj, pCGdiObject, hWndOwner, pFuncNew);
+		}
+		HGDIOBJ RemoveHandleGdiobj(HGDIOBJ hGdiobj)
+		{
+			if (hGdiobj == NULL) return NULL;
+
+			return m_cChildGdiobj.RemoveHandle(hGdiobj);
+		}
+
+
+		void* FromHandleHnd(HANDLE hHandle, void* pVoid = NULL, HWND hWndOwner = NULL, HANDLE_FUNC_NEW pFuncNew = NULL)
+		{
+			if (hHandle == NULL) return NULL;
+
+			return m_cLocalHandle.FromHandle(hHandle, pVoid, hWndOwner, pFuncNew);
+		}
+		HANDLE RemoveHandleHnd(HANDLE hHandle)
+		{
+			if (hHandle == NULL) return NULL;
+
+			return m_cLocalHandle.RemoveHandle(hHandle);
+		}
+
+		static CModuleState* _GetCModuleState()
+		{
+			static CModuleState cModuleState;
+
+			return &cModuleState;
+		}
 
 		static CModuleState* GetCModuleState()
 		{
-			static CModuleState cModuleState ;
-		
-			return &cModuleState ;
+			//return _GetCModuleState();
+			_VOLATILE_STATIC_FUNC_T_V(CModuleState*, _GetCModuleState)
 		}
 
 
@@ -1422,8 +1427,6 @@ class CWinApp : public CWinThread, public CModuleThreadState, public CWinMsg
 			*lpszExt = 0;       // no suffix
 
 			TCHAR szExeName[_MAX_PATH];
-			TCHAR szTitle[256];
-			TCHAR szAppID[256];
 
 			// get the exe title from the full path name [no extension]
 			dwRet = AfxGetFileName(szBuff, szExeName, _MAX_PATH);
@@ -1437,6 +1440,8 @@ class CWinApp : public CWinThread, public CModuleThreadState, public CWinMsg
 			// m_pszAppName is the name used to present to the user
 			if (m_pszAppName == NULL)
 			{
+				TCHAR szTitle[256];
+
 				if (AfxLoadString(AFX_IDS_APP_TITLE, szTitle) != 0)
 				{
 					m_pszAppName = _tcsdup(szTitle);    // human readable title
@@ -1450,6 +1455,8 @@ class CWinApp : public CWinThread, public CModuleThreadState, public CWinMsg
 			// application user model ID
 			if (m_pszAppID == NULL)
 			{
+				TCHAR szAppID[256];
+
 				if (AfxLoadString(AFX_IDS_APP_ID, szAppID) != 0)
 				{
 					m_pszAppID = _tcsdup(szAppID);
@@ -1670,8 +1677,6 @@ _INLINE void AfxClassInit(CRuntimeClass* pNewClass) { AfxGetModuleState()->m_cla
 #define AfxFindResourceHandle(lpszResource, lpszType) AfxGetResourceHandle()
 #define _AFX_CMDTARGET_GETSTATE() (AfxGetModuleState())
 
-
-CLASS_HANDLE_CREATE(CWMHnd, HWND, CWMHnd, Wnd)
 CLASS_HANDLE_CREATE(CWnd, HWND, CWMHnd, Wnd)
 CLASS_HANDLE_CREATE(CDialog, HWND, CWMHnd, Wnd)
 
@@ -1688,7 +1693,6 @@ CLASS_HANDLE_CREATE(CPen, HPEN, CGdiObject, Gdiobj)
 CLASS_HANDLE_CREATE(CRgn, HRGN, CGdiObject, Gdiobj)
 
 CLASS_HANDLE_CREATE(CImageListMTL, HIMAGELIST, void, Hnd)
-
 
 _INLINE BOOL AfxHelpEnabled()
 {

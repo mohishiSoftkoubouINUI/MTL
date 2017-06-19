@@ -734,8 +734,8 @@ _INLINE void CDockBar::ReDockControlBar(CControlBar* pBar, LPCRECT lpRect)
 		}
 
 		// position at requested position
-		pBar->SetWindowPos(NULL, rect.left, rect.top, rect.Width(),
-			rect.Height(), SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOCOPYBITS);
+		pBar->SetWindowPos(NULL, rect.left, rect.top, rect.Width(), rect.Height(), 
+							SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOCOPYBITS);
 	}
 	else
 	{
@@ -748,7 +748,7 @@ _INLINE void CDockBar::ReDockControlBar(CControlBar* pBar, LPCRECT lpRect)
 
 		// align off the edge initially
 		pBar->SetWindowPos(NULL, -afxData.cxBorder2, -afxData.cyBorder2, 0, 0,
-			SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOCOPYBITS);
+							SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOCOPYBITS);
 	}
 
 	// attach it to the docking site

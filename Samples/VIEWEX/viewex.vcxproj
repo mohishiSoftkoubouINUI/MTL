@@ -109,6 +109,7 @@
       <ProgramDataBaseFileName>.\$(Configuration)\</ProgramDataBaseFileName>
       <OmitFramePointers>true</OmitFramePointers>
       <CallingConvention>FastCall</CallingConvention>
+      <RuntimeTypeInfo>false</RuntimeTypeInfo>
     </ClCompile>
     <Midl>
       <SuppressStartupBanner>true</SuppressStartupBanner>

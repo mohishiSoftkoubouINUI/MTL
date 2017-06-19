@@ -35,11 +35,17 @@ class _AFX_SOCK_STATE
 		CPtrList m_listSocketNotifications ;
 };
 
-_INLINE _AFX_SOCK_STATE* GetafxSockState()
+_INLINE _AFX_SOCK_STATE* _GetafxSockState()
 {
 	static _AFX_SOCK_STATE _afxSockState;
 
 	return &_afxSockState;
+}
+
+_INLINE _AFX_SOCK_STATE* GetafxSockState()
+{
+	//return _GetafxSockState();
+	_VOLATILE_STATIC_FUNC_T_V(_AFX_SOCK_STATE*, _GetafxSockState)
 }
 
 

@@ -1,6 +1,6 @@
 
 /*
-	MTL (MFC on ATL/WTL)  Version 1.0.1.2
+	MTL (MFC on ATL/WTL)  Version 1.0.2.3
 		MFC interface with header files only 
 
 	Required :	Microsoft Visual C++ MFC
@@ -92,6 +92,7 @@
 #define _CRT_NON_CONFORMING_SWPRINTFS
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 
+#define _SECURE_ATL 0
 
 #define _WTL_TYPES
 
@@ -251,6 +252,12 @@ __inline BOOL WINAPI GetFileSizeEx(HANDLE hFile, PLARGE_INTEGER lpFileSize)
 #include "mtlapp.h"
 #include "mtlappd.h"
 
+#ifdef _MTL_ATL3
+#include <atlcom.h>
+#include <atlhost.h>
+#endif
+#include <exdispid.h>
+#include "mtlviewht.h"
 
 #pragma comment(lib, "kernel32.lib")
 #pragma comment(lib, "user32.lib")
@@ -267,7 +274,7 @@ __inline BOOL WINAPI GetFileSizeEx(HANDLE hFile, PLARGE_INTEGER lpFileSize)
 #include <winsock.h>
 #endif
 
-#include <mtlsock.h>
+#include "mtlsock.h"
 
 #pragma comment(lib, "wsock32.lib")
 #endif // MTL_REMOVE_CASYNCSOCKET_INCLUDE
@@ -296,14 +303,18 @@ class CBasePane : public CToolBar
 
 	public:
 
-		DWORD m_dwStyle ;
+		//DWORD m_dwStyle ;
 
 	public:
+		virtual DWORD GetPaneStyle() const { return m_dwStyle; }
+
 		virtual void SetPaneAlignment(DWORD dwAlignment)
 		{
 			m_dwStyle &= ~(CBRS_ALIGN_ANY);
 			m_dwStyle |= dwAlignment;
 		}
+
+		virtual void SetPaneStyle(DWORD dwNewStyle) { m_dwStyle = dwNewStyle; }
 };
 
 
@@ -478,44 +489,94 @@ class CMFCMenuBar : public CMFCToolBar
 		{
 			m_hMenu = NULL;
 			m_pParentWnd = NULL;
-			m_dwStyle = 0;
+
+			m_iHighlighted = -1 ;
+			m_iLastHighlighted = -1 ;
+			m_iMouseHighlighted = -1 ;
+			m_bTrackPopupMenu = FALSE ;
+
+			m_bPostTrack = FALSE ;
+			m_iPostHighlighted = -1;
 		}
 
 	public:
 		HMENU m_hMenu;
 		CWnd* m_pParentWnd;
-		DWORD m_dwStyle;
+
+		INT	m_iHighlighted ;
+		INT	m_iLastHighlighted;
+		INT m_iMouseHighlighted;
+		BOOL m_bTrackPopupMenu;
+
+		BOOL m_bPostTrack ;
+		INT m_iPostHighlighted;
+		POINT m_ptPostTrack;
 
 	public:
 		virtual LRESULT WindowProc(UINT nMsg, WPARAM wParam, LPARAM lParam)
 		{
-			if (nMsg == WM_LBUTTONDOWN)
+			if (((nMsg == WM_LBUTTONDOWN) && (m_bTrackPopupMenu == FALSE)) || ((nMsg == WM_MOUSEMOVE) && (m_bTrackPopupMenu)))
 			{
 				INT xPos = GET_X_LPARAM(lParam);
 				INT yPos = GET_Y_LPARAM(lParam);
 
+				CPoint pos = { xPos, yPos } ;
+
+				if (nMsg == WM_MOUSEMOVE)
+					ScreenToClient(&pos) ;
+
 				CToolBarCtrl& rCToolBarCtrl = GetToolBarCtrl();
 
-				INT iIndex = rCToolBarCtrl.HitTest(&CPoint(xPos, yPos)) ;
-
-				if (iIndex >= 0)
+				INT iButton = rCToolBarCtrl.HitTest(&pos);
+				if ((0 <= iButton) && (iButton < rCToolBarCtrl.GetButtonCount()))
 				{
-					CMenu* pMenu = CMenu::FromHandle(m_hMenu);
+					//TRACE("WindowProc: hWnd=%x, nMsg=%d, x=%d, y=%d, iButton=%d, iHighlighted=%d, iLastHighlighted=%d, bTrackPopupMenu=%d\n", 
+					//	m_hWnd, nMsg, xPos, yPos, iButton, m_iHighlighted, m_iLastHighlighted, m_bTrackPopupMenu);
 
-					RECT rRect;
-					GetItemRect(iIndex, &rRect);
+					INT iHighlighted = (nMsg == WM_LBUTTONDOWN) ? m_iLastHighlighted : m_iMouseHighlighted ;
 
-					ClientToScreen(&rRect); // TrackPopupMenu uses screen coords
-
-					CMenu* pPopup = pMenu->GetSubMenu(iIndex);
-					if (NULL != pPopup)
+					if (iHighlighted != iButton)
 					{
-						pPopup->TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON, rRect.left, rRect.bottom, this);
+						TrackPopupMenu(iButton, (nMsg == WM_MOUSEMOVE));
 					}
+					else if (m_bTrackPopupMenu == FALSE)
+					{
+						m_iLastHighlighted = -1 ;
+					}
+
+					m_iMouseHighlighted = iButton;
 
 					return 0;
 				}
+
+				if (nMsg != WM_MOUSEMOVE)
+					m_iMouseHighlighted = -1 ;
 			}
+			else if (nMsg == WM_INITMENUPOPUP)
+			{
+				//TRACE("WindowProc: WM_INITMENUPOPUP iHighlighted=%d, bTrackPopupMenu=%d\n", m_iHighlighted, m_bTrackPopupMenu);
+
+				m_pParentWnd->WindowProc(nMsg, wParam, lParam);
+			}
+			else if (nMsg == WM_EXITMENULOOP)
+			{
+				m_iLastHighlighted = Hilighted(-1);
+
+				//TRACE("WindowProc: WM_EXITMENULOOP iHighlighted=%d, iLastHighlighted=%d, bTrackPopupMenu=%d\n", m_iHighlighted, m_iLastHighlighted, m_bTrackPopupMenu);
+			}
+			else if (nMsg == WM_NCPAINT)
+			{
+				DWORD dwStyle = m_dwStyle;
+				m_dwStyle &= ~CBRS_ORIENT_VERT ;
+				m_dwStyle |= CBRS_ORIENT_HORZ;
+				OnNcPaint();
+				m_dwStyle = dwStyle;
+				return 0;
+			}
+
+			//TRACE("WindowProc: hWnd=%x, nMsg=%d, iHighlighted=%d, bTrackPopupMenu=%d\n",
+			//		m_hWnd, nMsg, m_iHighlighted, m_bTrackPopupMenu);
+
 
 			// otherwise, just handle in default way
 			LRESULT lResult = CMFCToolBar::WindowProc(nMsg, wParam, lParam);
@@ -579,10 +640,15 @@ class CMFCMenuBar : public CMFCToolBar
 
 		BOOL Create(CWnd* pParentWnd, DWORD dwStyle = AFX_DEFAULT_TOOLBAR_STYLE, UINT nID = AFX_IDW_MENUBAR)
 		{
+			// default image sizes
+
 			m_pParentWnd = pParentWnd;
 			BOOL bRet = CMFCToolBar::Create(pParentWnd, dwStyle, nID);
 
 			CreateFromMenu(pParentWnd->GetMenu()->GetSafeHandle()) ;
+
+			SetBorders() ;
+			SetHeight(m_sizeButton.cy + afxData.cyBorder2);
 
 			return bRet ;
 		}
@@ -602,9 +668,7 @@ class CMFCMenuBar : public CMFCToolBar
 
 				CMenu* pMenu = CMenu::FromHandle(hMenu);
 				if (pMenu == NULL)
-				{
 					return;
-				}
 
 				CToolBarCtrl& rCToolBarCtrl = GetToolBarCtrl();
 
@@ -628,9 +692,10 @@ class CMFCMenuBar : public CMFCToolBar
 
 					button.iBitmap = I_IMAGENONE ;
 					button.idCommand = (uiID != 0) ? uiID : 0;
-					button.fsState = TBSTATE_ENABLED;
-					button.fsStyle = (uiID != 0) ? TBSTYLE_DROPDOWN | BTNS_AUTOSIZE : TBSTYLE_SEP | BTNS_AUTOSIZE;
-					button.iString = iIndex ;
+					button.fsState = TBSTATE_ENABLED ;
+					//button.fsStyle = (uiID != 0) ? TBSTYLE_DROPDOWN | BTNS_AUTOSIZE : TBSTYLE_SEP | BTNS_AUTOSIZE;
+					button.fsStyle = (uiID != 0) ? BTNS_AUTOSIZE : TBSTYLE_SEP | BTNS_AUTOSIZE;
+					button.iString = iIndex;
 
 					DefWindowProc(TB_ADDBUTTONS, 1, (LPARAM)&button);
 				}
@@ -638,8 +703,233 @@ class CMFCMenuBar : public CMFCToolBar
 			}
 		}
 
-		virtual DWORD GetPaneStyle() const { return m_dwStyle; }
-		virtual void SetPaneStyle(DWORD dwNewStyle) { m_dwStyle = dwNewStyle; }
+		//
+		// Special TrackPopupMenu
+		//
+
+
+		INT Hilighted(INT iButton)
+		{
+			INT iLastHighlighted = m_iHighlighted ;
+
+			if (iLastHighlighted != iButton)
+			{
+#if 0
+				INT iButtonCount = GetToolBarCtrl().GetButtonCount() ;
+
+				if ((0 <= iLastHighlighted) && (iLastHighlighted < iButtonCount))
+					DefWindowProc(TB_PRESSBUTTON, iLastHighlighted, (LPARAM)MAKELONG(FALSE, 0));
+
+				if ((0 <= iButton) && (iButton < iButtonCount))
+					DefWindowProc(TB_PRESSBUTTON, iButton, (LPARAM)MAKELONG(TRUE, 0));
+#endif
+				m_iHighlighted = iButton ;
+			}
+
+			return iLastHighlighted ;
+		}
+
+		BOOL IsTrackPopupMenu(HMENU hMenu, UINT uKey, UINT uNest = 0)
+		{
+			INT iCount = GetMenuItemCount(hMenu) ;
+
+			for (INT i = 0 ; i < iCount ; i++)
+			{
+				UINT uState = GetMenuState(hMenu, i, MF_BYPOSITION) ;
+
+				if (uState & MF_HILITE)
+				{
+					if (uState & MF_POPUP)
+					{
+						HMENU hSubMenu = GetSubMenu(hMenu, i) ;
+						if (hSubMenu != NULL)
+						{
+							BOOL bRet = IsTrackPopupMenu(hSubMenu, uKey, ++uNest) ;
+
+							return bRet ;
+						}
+
+						if (uKey == VK_RIGHT)
+							return TRUE;
+					}
+
+					if (uNest != 0)
+					{
+						if (uKey == VK_LEFT)
+							return TRUE;
+
+						if (uKey == VK_RIGHT)
+							return FALSE;
+					}
+
+					break;
+				}
+			}
+
+			if ((uKey == VK_RIGHT) && (uNest != 0))
+				return TRUE;
+
+			return FALSE;
+		}
+
+		typedef struct _CreateWindowParam
+		{
+			HHOOK	hHookOldWndFilter;
+			CMFCMenuBar* pCWnd;
+			HWND hMenuWnd;
+		} CREATEWINDOWPARAM;
+
+		static CREATEWINDOWPARAM& GetHookOldWndFilter()
+		{
+			static CREATEWINDOWPARAM cwp = { NULL, NULL, NULL };
+
+			return cwp;
+		}
+
+		static LRESULT CALLBACK WndFilterHook(int nCode, WPARAM wParam, LPARAM lParam)
+		{
+			CREATEWINDOWPARAM& cwp = GetHookOldWndFilter();
+
+			if (nCode == MSGF_MENU)
+			{
+				MSG* pMsg = (MSG *)lParam;
+				if (pMsg->message == WM_KEYDOWN)
+				{
+					//TRACE("WndFilterHook: CMFCMenuBarWnd=%x, hParentWnd=%x, hWnd=%x, nMsg=%d, wParam=%d, lParam=%d\n", 
+					//	cwp.pCWnd->m_hWnd, ::GetParent(pMsg->hwnd), pMsg->hwnd, pMsg->message, pMsg->wParam, pMsg->lParam);
+
+					UINT uKey = (UINT)pMsg->wParam ;
+					HWND hParentWnd = ::GetParent(pMsg->hwnd) ;
+
+					if ((uKey == VK_LEFT) || (uKey == VK_RIGHT))
+					{
+						CMFCMenuBar* pCMFCMenuBar = cwp.pCWnd ;
+
+						INT iButton = pCMFCMenuBar->m_iHighlighted;
+
+						HMENU hMenu = GetSubMenu(pCMFCMenuBar->m_hMenu, iButton);
+
+						if (pCMFCMenuBar->IsTrackPopupMenu(hMenu, uKey) == FALSE)
+						{
+							CToolBarCtrl& rCToolBarCtrl = cwp.pCWnd->GetToolBarCtrl();
+
+							if (uKey == VK_LEFT)
+							{
+								if (--iButton < 0)
+									iButton = rCToolBarCtrl.GetButtonCount() - 1 ;
+							
+							}
+							else
+							{
+								if (++iButton >= rCToolBarCtrl.GetButtonCount())
+									iButton = 0 ;
+							}
+
+							pCMFCMenuBar->TrackPopupMenu(iButton, TRUE);
+						}
+					}
+					else if (uKey == VK_ESCAPE)
+					{
+						//cwp.pCWnd->m_iLastHighlighted = -1 ; //cwp.pCWnd->m_iHighlighted;
+						cwp.pCWnd->Hilighted(-1);
+					}
+				}
+				else if (pMsg->message == WM_MOUSEMOVE)
+				{
+					if (cwp.pCWnd->m_bTrackPopupMenu)
+						cwp.pCWnd->WindowProc(pMsg->message, pMsg->wParam, pMsg->lParam);
+				}
+
+			}
+
+			return ::CallNextHookEx(cwp.hHookOldWndFilter, nCode, wParam, lParam);
+		}
+
+		BOOL TrackPopupMenu(INT iButton, BOOL bPost = FALSE)
+		{
+			if (m_iHighlighted >= 0)
+			{
+				//::EndMenu();
+				DefWindowProc(WM_CANCELMODE, 0, 0);
+			}
+
+			if (iButton < 0)
+			{
+				Hilighted(iButton);
+
+				return TRUE;
+			}
+
+			RECT rRect;
+			GetItemRect(iButton, &rRect);
+
+			ClientToScreen(&rRect); // TrackPopupMenu uses screen coords
+
+			if (bPost)
+			{
+				TRACE("TrackPopupMenu: Post hWnd=%x, x=%d, y=%d, iButton=%d\n", m_hWnd, rRect.left, rRect.bottom, iButton);
+
+				m_bPostTrack = TRUE ;
+				m_ptPostTrack = { rRect.left, rRect.bottom };
+				m_iPostHighlighted = iButton ;
+
+				return TRUE;
+			}
+
+			CMenu* pMenu = CMenu::FromHandle(m_hMenu);
+			CMenu* pPopup = pMenu->GetSubMenu(iButton);
+
+			if (NULL != pPopup)
+			{
+				m_bTrackPopupMenu = TRUE;
+
+				CREATEWINDOWPARAM& cwp = GetHookOldWndFilter();
+				cwp.pCWnd = this ;
+				cwp.hHookOldWndFilter = ::SetWindowsHookEx(WH_MSGFILTER, WndFilterHook, NULL, ::GetCurrentThreadId());
+
+				POINT ptTrack = { rRect.left, rRect.bottom } ;
+
+				m_iMouseHighlighted = iButton ;
+
+				do
+				{
+					Hilighted(iButton);
+
+					pPopup->TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON, ptTrack.x, ptTrack.y, this);
+
+					if (m_bPostTrack == FALSE)
+						break ;
+
+					iButton = m_iPostHighlighted;
+					ptTrack = m_ptPostTrack;
+
+					m_bPostTrack = FALSE;
+					m_iPostHighlighted = -1;
+
+					pPopup = pMenu->GetSubMenu(iButton);
+
+				} while (TRUE) ;
+
+				m_iMouseHighlighted = -1 ;
+
+				MSG msg ;
+				if (PeekMessage(&msg, GetSafeHwnd(), WM_LBUTTONDOWN, WM_LBUTTONDOWN, PM_NOREMOVE) == FALSE)
+					m_iLastHighlighted = -1;
+
+				::UnhookWindowsHookEx(cwp.hHookOldWndFilter);
+
+				m_bTrackPopupMenu = FALSE;
+
+				return TRUE ;
+			}
+
+			m_iMouseHighlighted = -1 ;
+			m_iLastHighlighted = -1;
+			Hilighted(-1);
+
+			return FALSE;
+		}
+
 };
 
 

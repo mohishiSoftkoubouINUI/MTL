@@ -96,6 +96,9 @@ MFC 静的ライブラリプロジェクトの基本的な MTL 対応手順
         GetSafeHandle()
 
 
+1.0.2.3 主な追加変更
+CHtmlView 追加
+
 1.0.1.2 主な追加変更
 CReBar 追加
 
@@ -107,7 +110,7 @@ CReBar 追加
 
 
 /*
-    MTL (MFC on ATL/WTL)  Version 1.0.1.2
+    MTL (MFC on ATL/WTL)  Version 1.0.2.3
         MFC interface with header files only 
 
     Required :  Microsoft Visual C++ MFC

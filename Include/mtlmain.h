@@ -1,6 +1,6 @@
 
 
-CWinApp* CWinApp::m_pCWinApp;
+
 
 
 // CWnds for setting z-order with SetWindowPos's pWndInsertAfter parameter
@@ -9,15 +9,18 @@ const CWMHnd CWMHnd::wndBottom(HWND_BOTTOM);
 const CWMHnd CWMHnd::wndTopMost(HWND_TOPMOST);
 const CWMHnd CWMHnd::wndNoTopMost(HWND_NOTOPMOST);
 
+CWinApp* CWinApp::m_pCWinApp;
 
-const SIZE CScrollView::sizeDefault = {0,0};
 const CRect CFrameWnd::rectDefault(CW_USEDEFAULT, CW_USEDEFAULT, 0 /* 2*CW_USEDEFAULT */, 0 /* 2*CW_USEDEFAULT */);
+
+const SIZE CScrollView::sizeDefault = { 0, 0 };
+
 
 
 
 //IMPLEMENT_DYNAMIC(CObject, CObject)
 // special runtime-class structure for CObject (no base class)
-const struct CRuntimeClass CObject::classCObject = { "CObject", sizeof(CObject), 0xffff, NULL, NULL, NULL };
+AFX_COMDAT const CRuntimeClass CObject::classCObject = { "CObject", sizeof(CObject), 0xffff, NULL, NULL, NULL, NULL };
 CRuntimeClass* CObject::GetRuntimeClass() const { return RUNTIME_CLASS(CObject); }
 
 
@@ -57,6 +60,7 @@ IMPLEMENT_DYNAMIC(CFormView, CScrollView)
 #ifndef MTL_REMOVE_CFRAMEWND_VIEW
 IMPLEMENT_DYNCREATE(CPreviewView, CScrollView)
 #endif // MTL_REMOVE_CFRAMEWND_VIEW
+IMPLEMENT_DYNAMIC(CHtmlView, CFormView)
 
 IMPLEMENT_DYNAMIC(CCtrlView, CView)
 IMPLEMENT_DYNAMIC(CEditView, CCtrlView)
@@ -82,8 +86,6 @@ IMPLEMENT_DYNAMIC(CDialogEx, CDialog)
 IMPLEMENT_DYNAMIC(CFrameWndEx, CFrameWnd)
 IMPLEMENT_DYNAMIC(CMFCPropertyPage, CPropertyPage)
 IMPLEMENT_DYNAMIC(CMFCToolTipCtrl, CToolTipCtrl)
-//IMPLEMENT_DYNAMIC(CDialogEx, CDialog)
-//IMPLEMENT_DYNAMIC(CDialogEx, CDialog)
 
 #endif // _MTL_ATL3
 
@@ -120,18 +122,17 @@ extern "C" int WINAPI _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LP
 
 
 	// Perform specific initializations
-	if (!pApp->InitInstance())
+	if (!pApp->InitInstance() || (pApp->m_pMainWnd == NULL))
 	{
 		if (pApp->m_pMainWnd != NULL)
-		{
 			pApp->m_pMainWnd->DestroyWindow();
-		}
-		nReturnCode = pApp->ExitInstance();
-		goto InitFailure;
-	}
-	nReturnCode = pApp->Run();
 
-InitFailure:
+		nReturnCode = pApp->ExitInstance();
+	}
+	else
+	{
+		nReturnCode = pApp->Run();
+	}
 
 #ifdef _MTL_ATL3
 	_AtlWinModule.Term() ;

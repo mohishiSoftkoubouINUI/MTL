@@ -19,7 +19,7 @@ _INLINE UINT_PTR CALLBACK CCommonDialog::_AfxCommDlgProc(HWND hWnd, UINT message
 	{
 		CCommonDialog* pThis = (CCommonDialog*)cwp.pCWnd;
 		pThis->FromHandle(hWnd, pThis, NULL);
-		((CWMHnd*)pThis)->SubclassWindow(hWnd);
+		pThis->AfxSubclassWindow(hWnd);
 		cwp.pCWnd = NULL;
 	}
 
@@ -110,7 +110,7 @@ _INLINE UINT_PTR CALLBACK CCommonDialog::_AfxCommDlgProc(HWND hWnd, UINT message
 
 
 
-_INLINE CControlBar::~CControlBar()
+_INLINE void CControlBar::CControlBarDestruct()
 {
 	ASSERT_VALID(this);
 
@@ -2089,7 +2089,7 @@ _INLINE void CWnd::OnNcDestroy()
 		}
 	}
 
-	CWMHnd::UnsubclassWindow();
+	AfxUnsubclassWindow();
 
 	// call special post-cleanup routine
 	PostNcDestroy();

@@ -222,7 +222,12 @@ class CControlBar : public CWnd
 
 		}
 
-		virtual ~CControlBar() ;
+		void CControlBarDestruct() ;
+
+		virtual ~CControlBar()
+		{
+			_VOLATILE_CLASS_FUNC_V_V(CControlBar, CControlBarDestruct)
+		}
 			
 	public:
 		DECLARE_MESSAGE_MAP()
@@ -574,7 +579,7 @@ class CControlBar : public CWnd
 				m_hWndOwner = ::GetParent(m_hWnd);
 		}
 
-		void EraseNonClient()
+		void EraseNonClient() throw()
 		{
 			// get window DC that is clipped to the non-client area
 			CWindowDC dc(this);

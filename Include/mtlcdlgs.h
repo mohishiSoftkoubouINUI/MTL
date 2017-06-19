@@ -4,7 +4,6 @@
 
 
 
-
 /*============================================================================*/
 // CCommonDialog - base class for all common dialogs
 
@@ -422,11 +421,9 @@ class CFileDialogMTL : public CCommonDialog
 			return E_FAIL;
 #endif
 		}
-#endif //  MTL_REMOVE_CFILEDIALOG_VISTA
 
 		void ApplyOFNToShellDialog()
 		{
-#ifndef MTL_REMOVE_CFILEDIALOG_VISTA
 			ASSERT(m_bVistaStyle == TRUE);
 			if (m_bVistaStyle == TRUE)
 			{
@@ -613,8 +610,8 @@ class CFileDialogMTL : public CCommonDialog
 				hr = ((IFileDialog*)(m_pIFileDialog))->SetOptions(dwFlags);
 				ENSURE(SUCCEEDED(hr));
 			}
-#endif MTL_REMOVE_CFILEDIALOG_VISTA
 		}
+#endif MTL_REMOVE_CFILEDIALOG_VISTA
 
 		// Operations
 		virtual INT_PTR DoModal()
@@ -874,8 +871,8 @@ class CFileDialogMTL : public CCommonDialog
 
 				// find char pos after first Delimiter
 				while (*lpsz != chDelimiter && *lpsz != '\0')
-					lpsz = _tcsinc(lpsz);
-				lpsz = _tcsinc(lpsz);
+					lpsz = _CHAR_INC(lpsz);
+				lpsz = _CHAR_INC(lpsz);
 
 				// if single selection then return only selection
 				if (*lpsz == 0)
@@ -890,7 +887,7 @@ class CFileDialogMTL : public CCommonDialog
 			{
 				LPTSTR lpszPath = m_ofn.lpstrFile;
 				while (*lpszPath != chDelimiter)
-					lpszPath = _tcsinc(lpszPath);
+					lpszPath = _CHAR_INC(lpszPath);
 				strBasePath = strBasePath.Left(int(lpszPath - m_ofn.lpstrFile));
 			}
 
@@ -899,7 +896,7 @@ class CFileDialogMTL : public CCommonDialog
 
 			// find char pos at next Delimiter
 			while (*lpsz != chDelimiter && *lpsz != '\0')
-				lpsz = _tcsinc(lpsz);
+				lpsz = _CHAR_INC(lpsz);
 
 			if (!bExplorer && *lpsz == '\0')
 				pos = NULL;
@@ -908,7 +905,7 @@ class CFileDialogMTL : public CCommonDialog
 				if (!bExplorer)
 					strFileName = strFileName.Left(int(lpsz - lpszFileName));
 
-				lpsz = _tcsinc(lpsz);
+				lpsz = _CHAR_INC(lpsz);
 				if (*lpsz == '\0') // if double terminated then done
 					pos = NULL;
 				else
@@ -1140,7 +1137,7 @@ class CFileDialogMTL : public CCommonDialog
 						m_ofn.lpstrFile[lstrlen(m_ofn.lpstrFile) + 1] = _T('\0');
 						CoTaskMemFree(wcPathName);
 					}
-							psiResult->Release();
+					psiResult->Release();
 				}
 				else if (m_ofn.Flags & OFN_ALLOWMULTISELECT)
 				{
@@ -1192,7 +1189,7 @@ class CFileDialogMTL : public CCommonDialog
 												offset++;
 											}
 #ifdef UNICODE
-											lstrcpyn(pszFileName, wcPathName + offset, m_ofn.nMaxFile - (pszFileName - m_ofn.lpstrFile) - 1);
+											lstrcpyn(pszFileName, wcPathName + offset, (INT)(m_ofn.nMaxFile - (pszFileName - m_ofn.lpstrFile) - 1));
 											pszFileName += lstrlen(wcPathName + offset) + 1;
 #else
 											pszFileName += ::WideCharToMultiByte(CP_ACP, 0, wcPathName + offset, -1, pszFileName,
@@ -1247,46 +1244,471 @@ class CFileDialogMTL : public CCommonDialog
 
 #ifndef MTL_REMOVE_CFILEDIALOG_VISTA
 #ifdef _SHELLDIALOG
-		HRESULT AddCheckButton(DWORD dwIDCtl, const CString& strLabel, BOOL bChecked);
-		HRESULT AddComboBox(DWORD dwIDCtl);
-		HRESULT AddControlItem(DWORD dwIDCtl, DWORD dwIDItem, const CString& strLabel);
-		HRESULT AddEditBox(DWORD dwIDCtl, const CString& strText);
-		HRESULT AddMenu(DWORD dwIDCtl, const CString& strLabel);
-		HRESULT AddSeparator(DWORD dwIDCtl);
-		HRESULT AddText(DWORD dwIDCtl, const CString& strText);
-		void AddPlace(LPCWSTR lpszFolder, FDAP fdap = FDAP_TOP) throw();
-		void AddPlace(IShellItem* psi, FDAP fdap = FDAP_TOP) throw();
-		HRESULT AddPushButton(DWORD dwIDCtl, const CString& strLabel);
-		HRESULT AddRadioButtonList(DWORD dwIDCtl);
+		HRESULT AddCheckButton(DWORD dwIDCtl, const CString& strLabel, BOOL bChecked)
+		{
+			if (!m_bVistaStyle) { return E_NOTIMPL; }
+
+			IFileDialogCustomize* pFileDialogCustomize = GetIFileDialogCustomize();
+
+#ifndef UNICODE
+			CStringW strLabelW = strLabel;
+			HRESULT hr = pFileDialogCustomize->AddCheckButton(dwIDCtl, (LPCWSTR)strLabelW.GetString(), bChecked);
+#else
+			HRESULT hr = pFileDialogCustomize->AddCheckButton(dwIDCtl, (LPCWSTR)strLabel.GetString(), bChecked);
+#endif
+
+			pFileDialogCustomize->Release();
+			return hr;
+		}
+
+		HRESULT AddComboBox(DWORD dwIDCtl)
+		{
+			if (!m_bVistaStyle) { return E_NOTIMPL; }
+
+			IFileDialogCustomize* pFileDialogCustomize = GetIFileDialogCustomize();
+
+			HRESULT hr = pFileDialogCustomize->AddComboBox(dwIDCtl);
+
+			pFileDialogCustomize->Release();
+			return hr;
+		}
+
+		HRESULT AddControlItem(DWORD dwIDCtl, DWORD dwIDItem, const CString& strLabel)
+		{
+			if (!m_bVistaStyle) { return E_NOTIMPL; }
+
+			IFileDialogCustomize* pFileDialogCustomize = GetIFileDialogCustomize();
+
+#ifndef UNICODE
+			CStringW strLabelW = strLabel;
+			HRESULT hr = pFileDialogCustomize->AddControlItem(dwIDCtl, dwIDItem, (LPCWSTR)strLabelW.GetString());
+#else
+			HRESULT hr = pFileDialogCustomize->AddControlItem(dwIDCtl, dwIDItem, (LPCWSTR)strLabel.GetString());
+#endif
+
+			pFileDialogCustomize->Release();
+			return hr;
+		}
+
+		HRESULT AddEditBox(DWORD dwIDCtl, const CString& strText)
+		{
+			if (!m_bVistaStyle) { return E_NOTIMPL; }
+
+			IFileDialogCustomize* pFileDialogCustomize = GetIFileDialogCustomize();
+
+#ifndef UNICODE
+			CStringW strTextW = strText;
+			HRESULT hr = pFileDialogCustomize->AddEditBox(dwIDCtl, (LPCWSTR)strTextW.GetString());
+#else
+			HRESULT hr = pFileDialogCustomize->AddEditBox(dwIDCtl, (LPCWSTR)strText.GetString());
+#endif
+
+			pFileDialogCustomize->Release();
+			return hr;
+		}
+
+		HRESULT AddMenu(DWORD dwIDCtl, const CString& strLabel)
+		{
+			if (!m_bVistaStyle) { return E_NOTIMPL; }
+
+			IFileDialogCustomize* pFileDialogCustomize = GetIFileDialogCustomize();
+
+#ifndef UNICODE
+			CStringW strLabelW = strLabel;
+			HRESULT hr = pFileDialogCustomize->AddMenu(dwIDCtl, (LPCWSTR)strLabelW.GetString());
+#else
+			HRESULT hr = pFileDialogCustomize->AddMenu(dwIDCtl, (LPCWSTR)strLabel.GetString());
+#endif
+
+			pFileDialogCustomize->Release();
+			return hr;
+		}
+
+		HRESULT AddSeparator(DWORD dwIDCtl)
+		{
+			if (!m_bVistaStyle) { return E_NOTIMPL; }
+
+			IFileDialogCustomize* pFileDialogCustomize = GetIFileDialogCustomize();
+
+			HRESULT hr = pFileDialogCustomize->AddSeparator(dwIDCtl);
+
+			pFileDialogCustomize->Release();
+			return hr;
+		}
+
+		HRESULT AddText(DWORD dwIDCtl, const CString& strText)
+		{
+			if (!m_bVistaStyle) { return E_NOTIMPL; }
+
+			IFileDialogCustomize* pFileDialogCustomize = GetIFileDialogCustomize();
+
+#ifndef UNICODE
+			CStringW strTextW = strText;
+			HRESULT hr = pFileDialogCustomize->AddText(dwIDCtl, (LPCWSTR)strTextW.GetString());
+#else
+			HRESULT hr = pFileDialogCustomize->AddText(dwIDCtl, (LPCWSTR)strText.GetString());
+#endif
+
+			pFileDialogCustomize->Release();
+			return hr;
+		}
+
+		void AddPlace(LPCWSTR lpszFolder, FDAP fdap = FDAP_TOP) throw()
+		{
+			if (!m_bVistaStyle) { return; }
+
+			ASSERT(lpszFolder != NULL);
+
+			CComPtr<IShellItem> shellItem;
+
+			HRESULT hr = _AfxSHCreateItemFromParsingName(lpszFolder, 0, IID_IShellItem, (void**)(&shellItem));
+			ENSURE(SUCCEEDED(hr));
+
+			AddPlace(shellItem, fdap);
+		}
+
+		void AddPlace(IShellItem* psi, FDAP fdap = FDAP_TOP) throw()
+		{
+			if (!m_bVistaStyle) { return; }
+
+			HRESULT hr = ((IFileDialog*)(m_pIFileDialog))->AddPlace(psi, fdap);
+
+			ENSURE(SUCCEEDED(hr));
+		}
+
+		HRESULT AddPushButton(DWORD dwIDCtl, const CString& strLabel)
+		{
+			if (!m_bVistaStyle) { return E_NOTIMPL; }
+
+			IFileDialogCustomize* pFileDialogCustomize = GetIFileDialogCustomize();
+
+#ifndef UNICODE
+			CStringW strLabelW = strLabel;
+			HRESULT hr = pFileDialogCustomize->AddPushButton(dwIDCtl, (LPCWSTR)strLabelW.GetString());
+#else
+			HRESULT hr = pFileDialogCustomize->AddPushButton(dwIDCtl, (LPCWSTR)strLabel.GetString());
+#endif
+
+			pFileDialogCustomize->Release();
+			return hr;
+}
+
+		HRESULT AddRadioButtonList(DWORD dwIDCtl)
+		{
+			if (!m_bVistaStyle) { return E_NOTIMPL; }
+
+			IFileDialogCustomize* pFileDialogCustomize = GetIFileDialogCustomize();
+
+			HRESULT hr = pFileDialogCustomize->AddRadioButtonList(dwIDCtl);
+
+			pFileDialogCustomize->Release();
+			return hr;
+		}
+
 
 		HRESULT CDialogEventHandler_CreateInstance(REFIID riid, void **ppv);
 
-		HRESULT EnableOpenDropDown(DWORD dwIDCtl);
-		HRESULT EndVisualGroup();
+		HRESULT EnableOpenDropDown(DWORD dwIDCtl)
+		{
+			if (!m_bVistaStyle) { return E_NOTIMPL; }
 
-		HRESULT GetCheckButtonState(DWORD dwIDCtl, BOOL& bChecked);
-		HRESULT GetControlItemState(DWORD dwIDCtl, DWORD dwIDItem, CDCONTROLSTATEF& dwState);
-		HRESULT GetControlState(DWORD dwIDCtl, CDCONTROLSTATEF& dwState);
-		HRESULT GetEditBoxText(DWORD dwIDCtl, CString& strText);
+			IFileDialogCustomize* pFileDialogCustomize = GetIFileDialogCustomize();
+			HRESULT hr = pFileDialogCustomize->EnableOpenDropDown(dwIDCtl);
+
+			pFileDialogCustomize->Release();
+			return hr;
+		}
+
+		HRESULT EndVisualGroup()
+		{
+			if (!m_bVistaStyle) { return E_NOTIMPL; }
+
+			IFileDialogCustomize* pFileDialogCustomize = GetIFileDialogCustomize();
+
+			HRESULT hr = pFileDialogCustomize->EndVisualGroup();
+
+			pFileDialogCustomize->Release();
+			return hr;
+		}
+
+		HRESULT GetCheckButtonState(DWORD dwIDCtl, BOOL& bChecked)
+		{
+			if (!m_bVistaStyle) { return E_NOTIMPL; }
+
+			IFileDialogCustomize* pFileDialogCustomize = GetIFileDialogCustomize();
+
+			HRESULT hr = pFileDialogCustomize->GetCheckButtonState(dwIDCtl, &bChecked);
+
+			pFileDialogCustomize->Release();
+			return hr;
+		}
+
+		HRESULT GetControlItemState(DWORD dwIDCtl, DWORD dwIDItem, CDCONTROLSTATEF& dwState)
+		{
+			if (!m_bVistaStyle) { return E_NOTIMPL; }
+
+			IFileDialogCustomize* pFileDialogCustomize = GetIFileDialogCustomize();
+
+			HRESULT hr = pFileDialogCustomize->GetControlItemState(dwIDCtl, dwIDItem, &dwState);
+
+			pFileDialogCustomize->Release();
+			return hr;
+		}
+
+		HRESULT GetControlState(DWORD dwIDCtl, CDCONTROLSTATEF& dwState)
+		{
+			if (!m_bVistaStyle) { return E_NOTIMPL; }
+
+			IFileDialogCustomize* pFileDialogCustomize = GetIFileDialogCustomize();
+
+			HRESULT hr = pFileDialogCustomize->GetControlState(dwIDCtl, &dwState);
+
+			pFileDialogCustomize->Release();
+			return hr;
+		}
+
+		HRESULT GetEditBoxText(DWORD dwIDCtl, CString& strText)
+		{
+			if (!m_bVistaStyle) { return E_NOTIMPL; }
+
+			IFileDialogCustomize* pFileDialogCustomize = GetIFileDialogCustomize();
+
+			strText.Empty();
+
+			LPWSTR wcText = NULL;
+			HRESULT hr = pFileDialogCustomize->GetEditBoxText(dwIDCtl, &wcText);
+
+			if (SUCCEEDED(hr))
+			{
+				strText = wcText;
+				CoTaskMemFree(wcText);
+			}
+
+			pFileDialogCustomize->Release();
+			return hr;
+		}
+
 		IShellItem* GetResult() throw();
 		HRESULT GetSelectedControlItem(DWORD dwIDCtl, DWORD& dwIDItem);
 
-		IShellItemArray* GetResults() throw();
+		IShellItemArray* GetResults() throw()
+		{
+			IShellItem *pItem = NULL;
+			if (!m_bVistaStyle) { return pItem; }
 
-		HRESULT MakeProminent(DWORD dwIDCtl);
+			HRESULT hr = (static_cast<IFileDialog*>(m_pIFileDialog))->GetResult(&pItem);
+			if (SUCCEEDED(hr))
+			{
+				return pItem;
+			}
 
-		HRESULT RemoveControlItem(DWORD dwIDCtl, DWORD dwIDItem);
+#ifndef UNICODE
+			CStringW strPathNameW = GetPathName().GetString();
+			hr = _AfxSHCreateItemFromParsingName((PCWSTR)strPathNameW, 0, IID_IShellItem, (void**)&pItem);
+#else
+			hr = _AfxSHCreateItemFromParsingName((PCWSTR)GetPathName().GetString(), 0, IID_IShellItem, (void**)&pItem);
+#endif
+			ENSURE(SUCCEEDED(hr));
 
-		HRESULT SetCheckButtonState(DWORD dwIDCtl, BOOL bChecked);
-		HRESULT SetControlItemState(DWORD dwIDCtl, DWORD dwIDItem, CDCONTROLSTATEF dwState);
-		HRESULT SetControlItemText(DWORD dwIDCtl, DWORD dwIDItem, const CString& strLabel);
-		HRESULT SetControlLabel(DWORD dwIDCtl, const CString& strLabel);
-		HRESULT SetControlState(DWORD dwIDCtl, CDCONTROLSTATEF dwState);
-		HRESULT SetEditBoxText(DWORD dwIDCtl, const CString& strText);
-		BOOL SetProperties(LPCWSTR lpszPropList);
-		HRESULT SetSelectedControlItem(DWORD dwIDCtl, DWORD dwIDItem);
+			return pItem;
+		}
 
-		HRESULT StartVisualGroup(DWORD dwIDCtl, const CString& strLabel);
+		HRESULT MakeProminent(DWORD dwIDCtl)
+		{
+			if (!m_bVistaStyle) { return E_NOTIMPL; }
+
+			IFileDialogCustomize* pFileDialogCustomize = GetIFileDialogCustomize();
+
+			HRESULT hr = pFileDialogCustomize->MakeProminent(dwIDCtl);
+
+			pFileDialogCustomize->Release();
+			return hr;
+		}
+
+		HRESULT RemoveControlItem(DWORD dwIDCtl, DWORD dwIDItem)
+		{
+			if (!m_bVistaStyle) { return E_NOTIMPL; }
+
+			IFileDialogCustomize* pFileDialogCustomize = GetIFileDialogCustomize();
+
+			HRESULT hr = pFileDialogCustomize->RemoveControlItem(dwIDCtl, dwIDItem);
+
+			pFileDialogCustomize->Release();
+			return hr;
+}
+
+		HRESULT SetCheckButtonState(DWORD dwIDCtl, BOOL bChecked)
+		{
+			if (!m_bVistaStyle) { return E_NOTIMPL; }
+
+			IFileDialogCustomize* pFileDialogCustomize = GetIFileDialogCustomize();
+
+			HRESULT hr = pFileDialogCustomize->SetCheckButtonState(dwIDCtl, bChecked);
+
+			pFileDialogCustomize->Release();
+			return hr;
+}
+
+		HRESULT SetControlItemState(DWORD dwIDCtl, DWORD dwIDItem, CDCONTROLSTATEF dwState)
+		{
+			if (!m_bVistaStyle) { return E_NOTIMPL; }
+
+			IFileDialogCustomize* pFileDialogCustomize = GetIFileDialogCustomize();
+
+			HRESULT hr = pFileDialogCustomize->SetControlItemState(dwIDCtl, dwIDItem, dwState);
+
+			pFileDialogCustomize->Release();
+			return hr;
+		}
+
+		HRESULT SetControlItemText(DWORD dwIDCtl, DWORD dwIDItem, const CString& strLabel)
+		{
+			if (!m_bVistaStyle) { return E_NOTIMPL; }
+
+			IFileDialogCustomize* pFileDialogCustomize = GetIFileDialogCustomize();
+
+#ifndef UNICODE
+			CStringW strLabelW = strLabel;
+			HRESULT hr = pFileDialogCustomize->SetControlItemText(dwIDCtl, dwIDItem, (LPCWSTR)strLabelW.GetString());
+#else
+			HRESULT hr = pFileDialogCustomize->SetControlItemText(dwIDCtl, dwIDItem, (LPCWSTR)strLabel.GetString());
+#endif
+
+			pFileDialogCustomize->Release();
+			return hr;
+		}
+
+		HRESULT SetControlLabel(DWORD dwIDCtl, const CString& strLabel)
+		{
+			if (!m_bVistaStyle) { return E_NOTIMPL; }
+
+			IFileDialogCustomize* pFileDialogCustomize = GetIFileDialogCustomize();
+
+#ifndef UNICODE
+			CStringW strLabelW = strLabel;
+			HRESULT hr = pFileDialogCustomize->SetControlLabel(dwIDCtl, (LPCWSTR)strLabelW.GetString());
+#else
+			HRESULT hr = pFileDialogCustomize->SetControlLabel(dwIDCtl, (LPCWSTR)strLabel.GetString());
+#endif
+
+			pFileDialogCustomize->Release();
+			return hr;
+		}
+
+		HRESULT SetControlState(DWORD dwIDCtl, CDCONTROLSTATEF dwState)
+		{
+			if (!m_bVistaStyle) { return E_NOTIMPL; }
+
+			IFileDialogCustomize* pFileDialogCustomize = GetIFileDialogCustomize();
+
+			HRESULT hr = pFileDialogCustomize->SetControlState(dwIDCtl, dwState);
+
+			pFileDialogCustomize->Release();
+			return hr;
+		}
+
+		HRESULT SetEditBoxText(DWORD dwIDCtl, const CString& strText)
+		{
+			if (!m_bVistaStyle) { return E_NOTIMPL; }
+
+			IFileDialogCustomize* pFileDialogCustomize = GetIFileDialogCustomize();
+
+#ifndef UNICODE
+			CStringW strTextW = strText;
+			HRESULT hr = pFileDialogCustomize->SetEditBoxText(dwIDCtl, (LPCWSTR)strTextW.GetString());
+#else
+			HRESULT hr = pFileDialogCustomize->SetEditBoxText(dwIDCtl, (LPCWSTR)strText.GetString());
+#endif
+
+			pFileDialogCustomize->Release();
+			return hr;
+		}
+
+		BOOL SetProperties(LPCWSTR lpszPropList)
+		{
+			ASSERT(m_bVistaStyle == TRUE);
+			ASSERT(lpszPropList != NULL);
+			ASSERT(GetSafeHwnd() == NULL);
+
+			BOOL bRes = FALSE;
+
+			if (!m_bVistaStyle)
+			{
+				return bRes;
+			}
+
+			IFileSaveDialog* pSaveFile = GetIFileSaveDialog();
+			if (pSaveFile == NULL)
+			{
+				return bRes;
+			}
+
+			IPropertyDescriptionList* pPropertyDescriptionList = NULL;
+			HRESULT hr = _AfxPSGetPropertyDescriptionListFromString(lpszPropList, IID_PPV_ARGS(&pPropertyDescriptionList));
+
+			if (SUCCEEDED(hr))
+			{
+				hr = pSaveFile->SetCollectedProperties(pPropertyDescriptionList, TRUE);
+				if (SUCCEEDED(hr))
+				{
+					IShellItem2* pItem = NULL;
+#ifndef UNICODE
+					CStringW strPathNameW = GetPathName().GetString();
+					hr = _AfxSHCreateItemFromParsingName((PCWSTR)strPathNameW, 0, IID_IShellItem2, (void**)(&pItem));
+#else
+					hr = _AfxSHCreateItemFromParsingName((PCWSTR)GetPathName().GetString(), 0, IID_IShellItem2, (void**)(&pItem));
+#endif
+					if (SUCCEEDED(hr) && pItem != NULL)
+					{
+						IPropertyStore* pStore = NULL;
+						hr = pItem->GetPropertyStore(GPS_HANDLERPROPERTIESONLY, IID_IPropertyStore, (LPVOID*)&pStore);
+						if (SUCCEEDED(hr))
+						{
+							pSaveFile->SetProperties(pStore);
+							pStore->Release();
+						}
+
+						pItem->Release();
+					}
+					bRes = TRUE;
+				}
+
+				pPropertyDescriptionList->Release();
+			}
+
+			pSaveFile->Release();
+			return bRes;
+		}
+
+		HRESULT SetSelectedControlItem(DWORD dwIDCtl, DWORD dwIDItem)
+		{
+			if (!m_bVistaStyle) { return E_NOTIMPL; }
+
+			IFileDialogCustomize* pFileDialogCustomize = GetIFileDialogCustomize();
+
+			HRESULT hr = pFileDialogCustomize->SetSelectedControlItem(dwIDCtl, dwIDItem);
+
+			pFileDialogCustomize->Release();
+			return hr;
+		}
+
+		HRESULT StartVisualGroup(DWORD dwIDCtl, const CString& strLabel)
+		{
+			if (!m_bVistaStyle) { return E_NOTIMPL; }
+
+			IFileDialogCustomize* pFileDialogCustomize = GetIFileDialogCustomize();
+
+#ifndef UNICODE
+			CStringW strLabelW = strLabel;
+			HRESULT hr = pFileDialogCustomize->StartVisualGroup(dwIDCtl, (LPCWSTR)strLabelW.GetString());
+#else
+			HRESULT hr = pFileDialogCustomize->StartVisualGroup(dwIDCtl, (LPCWSTR)strLabel.GetString());
+#endif
+
+			pFileDialogCustomize->Release();
+			return hr;
+		}
+
 #endif // _SHELLDIALOG
 #endif // MTL_REMOVE_CFILEDIALOG_VISTA
 
@@ -1318,8 +1740,8 @@ class CFileDialogMTL : public CCommonDialog
 
 		BEGIN_INTERFACE_PART(FileDialogControlEvents, IUnknown)
 		END_INTERFACE_PART_OPTIONAL(FileDialogControlEvents)
-#endif // MTL_REMOVE_CFILEDIALOG_VISTA
 #endif // _SHELLDIALOG
+#endif // MTL_REMOVE_CFILEDIALOG_VISTA
 };
 
 //BEGIN_MESSAGE_MAP(CFileDialogMTL, CCommonDialog)
@@ -1327,7 +1749,7 @@ class CFileDialogMTL : public CCommonDialog
 
 
 
-class CCommonWnd : public CCmdTarget
+class _NO_VTABLE CCommonWnd : public CCmdTarget
 {
 	public:
 	public:
