@@ -55,8 +55,7 @@ _INLINE void CCmdUI::SetCheck(int nCheck)   // 0, 1 or 2 (indeterminate)
 
 		// place checkmark next to menu item
 
-		m_pMenu->CheckMenuItem(m_nIndex, MF_BYPOSITION |
-			(nCheck ? MF_CHECKED : MF_UNCHECKED));
+		m_pMenu->CheckMenuItem(m_nIndex, MF_BYPOSITION | (nCheck ? MF_CHECKED : MF_UNCHECKED));
 	}
 	else
 	{

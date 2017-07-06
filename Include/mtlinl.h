@@ -131,8 +131,12 @@ class CDumpContext ;
 
 
 #define _VOLATILE_STATIC_FUNC_T_V(retType, pfnHandler) \
-	volatile retType (*pFunc)() = (volatile retType(*)())&pfnHandler; \
+	volatile retType (*pFunc)() = (volatile retType (*)())&pfnHandler; \
 	return (retType)(*pFunc)(); \
+
+#define _VOLATILE_STATIC_FUNC_T_T_1(retType, pfnHandler, argType, tArg) \
+	volatile retType (*pFunc)(argType) = (volatile retType (*)(argType))&pfnHandler; \
+	return (retType)(*pFunc)(tArg); \
 
 #define _VOLATILE_CLASS_FUNC_V_V(theClass, pfnHandler) \
 	volatile void (theClass::*pFunc)() = (volatile void (theClass::*)())&theClass::pfnHandler; \

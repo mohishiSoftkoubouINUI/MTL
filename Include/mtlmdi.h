@@ -159,6 +159,9 @@ class CMDIFrameWnd : public CFrameWnd
 										" GetLastError returns 0x%8.8X\n", ::GetLastError());
 				return FALSE;
 			}
+
+			CWnd* pCWndMDIClient = FromHandle(m_hWndMDIClient, NULL, m_hWnd);
+
 			// Move it to the top of z-order
 			::BringWindowToTop(m_hWndMDIClient);
 
@@ -285,6 +288,7 @@ class CMDIChildWnd : public CFrameWnd
 
 	public:
 		DECLARE_MESSAGE_MAP()
+
 
 		HMENU m_hMenuShared;        // menu when we are active
 
@@ -529,8 +533,7 @@ class CMDIChildWnd : public CFrameWnd
 			if (!bVisibleNow)
 			{
 				// get current active window according to Windows MDI
-				HWND hWnd = (HWND)::SendMessage(pFrameWnd->m_hWndMDIClient,
-					WM_MDIGETACTIVE, 0, 0);
+				HWND hWnd = (HWND)::SendMessage(pFrameWnd->m_hWndMDIClient, WM_MDIGETACTIVE, 0, 0);
 				if (hWnd != m_hWnd)
 				{
 					// not active any more -- window must have been deactivated
@@ -543,8 +546,7 @@ class CMDIChildWnd : public CFrameWnd
 				pFrameWnd->MDINext();
 
 				// see if it has been deactivated now...
-				hWnd = (HWND)::SendMessage(pFrameWnd->m_hWndMDIClient,
-					WM_MDIGETACTIVE, 0, 0);
+				hWnd = (HWND)::SendMessage(pFrameWnd->m_hWndMDIClient, WM_MDIGETACTIVE, 0, 0);
 				if (hWnd == m_hWnd)
 				{
 					// still active -- fake deactivate it
@@ -786,7 +788,7 @@ _INLINE void CMDIFrameWnd::OnWindowNew()
 
 
 _INLINE CMDIChildWnd* CMDIFrameWnd::CreateNewChild(CRuntimeClass* pClass,
-	UINT nResources, HMENU hMenu /* = NULL */, HACCEL hAccel /* = NULL */)
+													UINT nResources, HMENU hMenu /* = NULL */, HACCEL hAccel /* = NULL */)
 {
 	ASSERT(pClass != NULL);
 	CMDIChildWnd* pFrame = (CMDIChildWnd*)pClass->CreateObject();
@@ -825,14 +827,12 @@ _INLINE CMDIChildWnd* CMDIFrameWnd::MDIGetActive(BOOL* pbMaximized) const
 	}
 
 	// MDI client has been created, get active MDI child
-	HWND hWnd = (HWND)::SendMessage(m_hWndMDIClient, WM_MDIGETACTIVE, 0,
-		(LPARAM)pbMaximized);
-	CMDIChildWnd* pWnd = (CMDIChildWnd*)CWnd::FromHandle(hWnd);
+	HWND hWnd = (HWND)::SendMessage(m_hWndMDIClient, WM_MDIGETACTIVE, 0, (LPARAM)pbMaximized);
+	CMDIChildWnd* pWnd = (CMDIChildWnd*)CWnd::FromHandlePermanent(hWnd);
 	ASSERT(pWnd == NULL || pWnd->IsKindOf(RUNTIME_CLASS(CMDIChildWnd)));
 
 	// check for special pseudo-inactive state
-	if (pWnd != NULL && pWnd->m_bPseudoInactive &&
-		(pWnd->GetStyle() & WS_VISIBLE) == 0)
+	if (pWnd != NULL && pWnd->m_bPseudoInactive && (pWnd->GetStyle() & WS_VISIBLE) == 0)
 	{
 		// Window is hidden, active, but m_bPseudoInactive -- return NULL
 		pWnd = NULL;

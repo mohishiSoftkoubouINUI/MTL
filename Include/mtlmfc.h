@@ -1,6 +1,6 @@
 
 /*
-	MTL (MFC on ATL/WTL)  Version 1.0.2.3
+	MTL (MFC on ATL/WTL)  Version 1.0.3.5
 		MFC interface with header files only 
 
 	Required :	Microsoft Visual C++ MFC
@@ -1367,7 +1367,7 @@ class CWinAppEx : public CWinApp
 		CString GetRegSectionPath(LPCTSTR szSectionAdd = _T(""))
 		{
 			CString strSectionPath = ::AFXGetRegPath(m_strRegSection);
-			if (szSectionAdd != NULL && _tcslen(szSectionAdd) != 0)
+			if (szSectionAdd != NULL && lstrlen(szSectionAdd) != 0)
 			{
 				strSectionPath += szSectionAdd;
 				strSectionPath += _T("\\");

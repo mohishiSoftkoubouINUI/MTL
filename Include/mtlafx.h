@@ -489,7 +489,7 @@ class CAfx
 			return NULL;
 		}
 
-		static BOOL AfxEndDeferRegisterClass(LONG fToRegister)
+		static BOOL _AfxEndDeferRegisterClass(LONG fToRegister)
 		{
 			// mask off all classes that are already registered
 			AFX_MODULE_STATE* pModuleState = AfxGetModuleState();
@@ -674,6 +674,12 @@ class CAfx
 
 			// must have registered at least as mamy classes as requested
 			return (fToRegister & fRegisteredClasses) == fToRegister;
+		}
+
+		static BOOL AfxEndDeferRegisterClass(LONG fToRegister)
+		{
+			//return _AfxEndDeferRegisterClass(fToRegister);
+			_VOLATILE_STATIC_FUNC_T_T_1(BOOL, _AfxEndDeferRegisterClass, LONG, fToRegister);
 		}
 
 		static BOOL AfxExtractSubString(CString& rString, LPCTSTR lpszFullString, int iSubString, TCHAR chSep = '\n')
@@ -1109,7 +1115,7 @@ class CAfx
 
 
 		// like RegisterClass, except will automatically call UnregisterClass
-		static BOOL AfxRegisterClass(WNDCLASS* lpWndClass)
+		static BOOL _AfxRegisterClass(WNDCLASS* lpWndClass)
 		{
 			WNDCLASS wndcls;
 			if (GetClassInfo(lpWndClass->hInstance, lpWndClass->lpszClassName, &wndcls))
@@ -1137,6 +1143,12 @@ class CAfx
 			return bRet;
 		}
 
+		static BOOL AfxRegisterClass(WNDCLASS* lpWndClass)
+		{
+			//return _AfxRegisterClass)(lpWndClass);
+			_VOLATILE_STATIC_FUNC_T_T_1(BOOL, _AfxRegisterClass, WNDCLASS*, lpWndClass);
+		}
+		
 		static LPCTSTR AfxRegisterWndClass(UINT nClassStyle, HCURSOR hCursor = NULL, HBRUSH hbrBackground = NULL, HICON hIcon = NULL)
 		{
 			// Returns a temporary string name for the class

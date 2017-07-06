@@ -1087,6 +1087,7 @@ _INLINE CDocument* CMultiDocTemplate::OpenDocumentFile(LPCTSTR lpszPathName, BOO
 	}
 
 	InitialUpdateFrame(pFrame, pDocument, bMakeVisible);
+
 	return pDocument;
 }
 

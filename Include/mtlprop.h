@@ -13,6 +13,7 @@ struct _AFX_PROPPAGEFONTINFO
 {
 	LPTSTR m_pszFaceName;
 	WORD m_wSize;
+
 	_AFX_PROPPAGEFONTINFO() : m_pszFaceName(NULL), m_wSize(0) {}
 	~_AFX_PROPPAGEFONTINFO() { GlobalFree(m_pszFaceName); }
 
@@ -1089,7 +1090,7 @@ class CPropertySheetMTL : public CWnd
 				return TRUE;
 
 			HGLOBAL hMemProp = (HGLOBAL)GetProp(this->m_hWnd, PROP_CLOSEPENDING_NAME);
-			BOOL* pBool = static_cast<BOOL*>(GlobalLock(hMemProp));
+			BOOL* pBool = (BOOL*)(GlobalLock(hMemProp));
 
 			if (pBool != NULL)
 			{

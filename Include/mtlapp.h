@@ -1382,7 +1382,7 @@ class CWinApp : public CWinThread, public CModuleThreadState, public CWinMsg
 					if (hSecKey == NULL)
 						return FALSE;
 					lResult = RegSetValueEx(hSecKey, lpszEntry, NULL, REG_SZ,
-						(LPBYTE)lpszValue, (static_cast<DWORD>(_tcslen(lpszValue)) + 1)*sizeof(TCHAR));
+						(LPBYTE)lpszValue, ((DWORD)(lstrlen(lpszValue)) + 1)*sizeof(TCHAR));
 					RegCloseKey(hSecKey);
 				}
 				return lResult == ERROR_SUCCESS;

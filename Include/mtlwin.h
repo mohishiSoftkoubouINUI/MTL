@@ -122,7 +122,7 @@ class CWnd : public CWMHnd
 		typedef struct _CreateWindowParam
 		{
 			HHOOK	hHookOldCbtFilter;
-			CWnd* pCWnd;
+			CWnd*	pCWnd;
 			ATOM	hAtom;
 		} CREATEWINDOWPARAM;
 
@@ -144,7 +144,8 @@ class CWnd : public CWMHnd
 				{
 					UnhookWindowCreate();
 
-					CWnd* pThis = (CWnd*)_AtlWinModule.ExtractCreateWndData();
+					//CWnd* pThis = (CWnd*)_AtlWinModule.ExtractCreateWndData();
+					CWnd* pThis = cwp.pCWnd ;
 
 					pThis->AfxSubclassWindow((HWND)wParam, ((LPCBT_CREATEWND)lParam)->lpcs);
 				}
@@ -154,11 +155,12 @@ class CWnd : public CWMHnd
 
 		static BOOL HookWindowCreate(CWnd* pCWnd, ATOM hAtom = NULL)
 		{
-			if (pCWnd != NULL)
-				_AtlWinModule.AddCreateWndData(&pCWnd->m_thunk.cd, pCWnd);
+			//if (pCWnd != NULL)
+			//	_AtlWinModule.AddCreateWndData(&pCWnd->m_thunk.cd, pCWnd);
 
 			CREATEWINDOWPARAM& cwp = GetHookOldCbtFilter();
 			cwp.hHookOldCbtFilter = ::SetWindowsHookEx(WH_CBT, CbtFilterHook, NULL, ::GetCurrentThreadId());
+			cwp.pCWnd = pCWnd ;
 			cwp.hAtom = hAtom;
 			return (cwp.hHookOldCbtFilter != NULL);
 		}
@@ -384,6 +386,37 @@ class CWnd : public CWMHnd
 			return (HBRUSH)Default();
 		}
 
+		void OnDestroy() { Default(); }
+
+		// WM_NCDESTROY is the absolute LAST message sent.
+		void OnNcDestroy();
+
+		virtual BOOL OnNotify(WPARAM, LPARAM lParam, LRESULT* pResult)
+		{
+			ASSERT(pResult != NULL);
+			NMHDR* pNMHDR = (NMHDR*)lParam;
+			HWND hWndCtrl = pNMHDR->hwndFrom;
+
+			// get the child ID from the window itself
+			UINT_PTR nID = _AfxGetDlgCtrlID(hWndCtrl);
+			int nCode = pNMHDR->code;
+
+			ASSERT(hWndCtrl != NULL);
+			ASSERT(::IsWindow(hWndCtrl));
+
+			if (AfxGetThreadState()->m_hLockoutNotifyWindow == m_hWnd)
+				return TRUE;        // locked out - ignore control notification
+
+			// reflect notification to child window control
+			if (ReflectLastMsg(hWndCtrl, pResult))
+				return TRUE;        // eaten by child
+
+			AFX_NOTIFY notify;
+			notify.pResult = pResult;
+			notify.pNMHDR = pNMHDR;
+			return OnCmdMsg((UINT)nID, MAKELONG(nCode, WM_NOTIFY), &notify, NULL);
+		}
+
 		static HWND _AfxTopChildWindowFromPoint(HWND hWnd, POINT pt)
 		{
 			ASSERT(hWnd != NULL);
@@ -444,36 +477,6 @@ class CWnd : public CWMHnd
 			return -1;  // not found
 		}
 
-		virtual BOOL OnNotify(WPARAM, LPARAM lParam, LRESULT* pResult)
-		{
-			ASSERT(pResult != NULL);
-			NMHDR* pNMHDR = (NMHDR*)lParam;
-			HWND hWndCtrl = pNMHDR->hwndFrom;
-
-			// get the child ID from the window itself
-			UINT_PTR nID = _AfxGetDlgCtrlID(hWndCtrl);
-			int nCode = pNMHDR->code;
-
-			ASSERT(hWndCtrl != NULL);
-			ASSERT(::IsWindow(hWndCtrl));
-
-			if (AfxGetThreadState()->m_hLockoutNotifyWindow == m_hWnd)
-				return TRUE;        // locked out - ignore control notification
-
-			// reflect notification to child window control
-			if (ReflectLastMsg(hWndCtrl, pResult))
-				return TRUE;        // eaten by child
-
-			AFX_NOTIFY notify;
-			notify.pResult = pResult;
-			notify.pNMHDR = pNMHDR;
-			return OnCmdMsg((UINT)nID, MAKELONG(nCode, WM_NOTIFY), &notify, NULL);
-		}
-
-		void OnDestroy() { Default(); }
-
-		// WM_NCDESTROY is the absolute LAST message sent.
-		void OnNcDestroy();
 
  		void OnHScroll(UINT, UINT, CScrollBar* pScrollBar) ;
 		void OnVScroll(UINT, UINT, CScrollBar* pScrollBar) ;

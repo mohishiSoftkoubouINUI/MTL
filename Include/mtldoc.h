@@ -723,7 +723,7 @@ class ATL_NO_VTABLE CDocTemplate : public CCmdTarget
 				LPCTSTR lpszDot = ::PathFindExtension(lpszPathName);
 				if (lpszDot != NULL)
 				{
-					if (::AfxComparePath(lpszDot, static_cast<const TCHAR *>(strFilterExt)))
+					if (::AfxComparePath(lpszDot, (const TCHAR *)(strFilterExt)))
 					{
 						return yesAttemptNative; // extension matches, looks like ours
 					}

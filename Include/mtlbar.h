@@ -413,26 +413,25 @@ class CControlBar : public CWnd
 					if (nMsg == WM_NOTIFY)
 					{
 						NMHDR* pNMHDR = (NMHDR*)lParam;
-						if (pNMHDR->code == TTN_NEEDTEXTA || pNMHDR->code == TTN_NEEDTEXTW)
+
+						if (pNMHDR->code == TTN_NEEDTEXTA)
 						{
 							TOOLTIPTEXTA* pTTTA = (TOOLTIPTEXTA*)pNMHDR;
+
+							if (pTTTA->hinst == 0 && (!pTTTA->lpszText || !*pTTTA->lpszText))
+							{
+								// not handled by owner, so let bar itself handle it
+								lResult = CWnd::WindowProc(nMsg, wParam, lParam);
+							}
+						}
+						else if (pNMHDR->code == TTN_NEEDTEXTW)
+						{
 							TOOLTIPTEXTW* pTTTW = (TOOLTIPTEXTW*)pNMHDR;
 
-							if (pNMHDR->code == TTN_NEEDTEXTA)
+							if (pTTTW->hinst == 0 && (!pTTTW->lpszText || !*pTTTW->lpszText))
 							{
-								if (pTTTA->hinst == 0 && (!pTTTA->lpszText || !*pTTTA->lpszText))
-								{
-									// not handled by owner, so let bar itself handle it
-									lResult = CWnd::WindowProc(nMsg, wParam, lParam);
-								}
-							}
-							else if (pNMHDR->code == TTN_NEEDTEXTW)
-							{
-								if (pTTTW->hinst == 0 && (!pTTTW->lpszText || !*pTTTW->lpszText))
-								{
-									// not handled by owner, so let bar itself handle it
-									lResult = CWnd::WindowProc(nMsg, wParam, lParam);
-								}
+								// not handled by owner, so let bar itself handle it
+								lResult = CWnd::WindowProc(nMsg, wParam, lParam);
 							}
 						}
 					}

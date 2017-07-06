@@ -941,7 +941,7 @@ class CFileDialogMTL : public CCommonDialog
 				{
 					CString strResult;
 					IShellItem *psiResult;
-					HRESULT hr = (static_cast<IFileDialog*>(m_pIFileDialog))->GetCurrentSelection(&psiResult);
+					HRESULT hr = ((IFileDialog*)(m_pIFileDialog))->GetCurrentSelection(&psiResult);
 					if (SUCCEEDED(hr))
 					{
 						SFGAOF sfgaoAttribs;
@@ -1032,10 +1032,10 @@ class CFileDialogMTL : public CCommonDialog
 			if (m_bVistaStyle == TRUE)
 			{
 #ifdef UNICODE
-				HRESULT hr = (static_cast<IFileDialogCustomize*>(m_pIFileDialogCustomize))->SetControlLabel(nID, lpsz);
+				HRESULT hr = ((IFileDialogCustomize*)(m_pIFileDialogCustomize))->SetControlLabel(nID, lpsz);
 #else
 				CStringW dest(lpsz);
-				HRESULT hr = (static_cast<IFileDialogCustomize*>(m_pIFileDialogCustomize))->SetControlLabel(nID, dest.GetString());
+				HRESULT hr = ((IFileDialogCustomize*)(m_pIFileDialogCustomize))->SetControlLabel(nID, dest.GetString());
 #endif
 				ENSURE(SUCCEEDED(hr));
 			}
@@ -1054,10 +1054,10 @@ class CFileDialogMTL : public CCommonDialog
 			if (m_bVistaStyle == TRUE)
 			{
 #ifdef UNICODE
-				HRESULT hr = (static_cast<IFileDialog*>(m_pIFileDialog))->SetDefaultExtension(lpsz);
+				HRESULT hr = ((IFileDialog*)(m_pIFileDialog))->SetDefaultExtension(lpsz);
 #else
 				CStringW strExt(lpsz);
-				HRESULT hr = (static_cast<IFileDialog*>(m_pIFileDialog))->SetDefaultExtension(strExt.GetString());
+				HRESULT hr = ((IFileDialog*)(m_pIFileDialog))->SetDefaultExtension(strExt.GetString());
 #endif
 				ENSURE(SUCCEEDED(hr));
 			}
@@ -1193,7 +1193,7 @@ class CFileDialogMTL : public CCommonDialog
 											pszFileName += lstrlen(wcPathName + offset) + 1;
 #else
 											pszFileName += ::WideCharToMultiByte(CP_ACP, 0, wcPathName + offset, -1, pszFileName,
-												m_ofn.nMaxFile - static_cast<int>(pszFileName - m_ofn.lpstrFile) - 1,
+												m_ofn.nMaxFile - (int)(pszFileName - m_ofn.lpstrFile) - 1,
 												NULL, NULL);
 #endif
 											CoTaskMemFree(wcPathName);
@@ -1496,7 +1496,7 @@ class CFileDialogMTL : public CCommonDialog
 			IShellItem *pItem = NULL;
 			if (!m_bVistaStyle) { return pItem; }
 
-			HRESULT hr = (static_cast<IFileDialog*>(m_pIFileDialog))->GetResult(&pItem);
+			HRESULT hr = ((IFileDialog*)(m_pIFileDialog))->GetResult(&pItem);
 			if (SUCCEEDED(hr))
 			{
 				return pItem;

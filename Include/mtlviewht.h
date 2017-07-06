@@ -91,7 +91,7 @@ class COleVariant : public tagVARIANT
 #ifndef _UNICODE
 				if (vtSrc == VT_BSTRT)
 				{
-					int nLen = static_cast<int>(_tcslen(lpszSrc));
+					int nLen = (int)(lstrlen(lpszSrc));
 					bstrVal = ::SysAllocStringByteLen(lpszSrc, nLen);
 
 					if (bstrVal == NULL)
