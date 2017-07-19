@@ -1,6 +1,6 @@
 
 /*
-	MTL (MFC on ATL/WTL)  Version 1.0.3.5
+	MTL (MFC on ATL/WTL)  Version 1.1.0.6
 		MFC interface with header files only 
 
 	Required :	Microsoft Visual C++ MFC
